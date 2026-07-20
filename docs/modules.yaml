@@ -1,0 +1,9 @@
+modules:
+  - name: core
+    description: Core HTTP client primitives
+    paths:
+      - src/robotsix_http/**
+  - name: tests
+    description: Test suite
+    paths:
+      - tests/**
