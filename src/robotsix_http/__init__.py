@@ -2,6 +2,14 @@
 
 from importlib.metadata import PackageNotFoundError, version
 
+from robotsix_http.client import (
+    DEFAULT_CONFIG,
+    ExternalAuthError,
+    ExternalHTTPError,
+    ExternalRateLimitError,
+    ExternalServiceError,
+    RetryClient,
+)
 from robotsix_http.retry import (
     RetryConfig,
     acall_with_retry,
@@ -10,6 +18,12 @@ from robotsix_http.retry import (
 )
 
 __all__ = [
+    "DEFAULT_CONFIG",
+    "ExternalAuthError",
+    "ExternalHTTPError",
+    "ExternalRateLimitError",
+    "ExternalServiceError",
+    "RetryClient",
     "RetryConfig",
     "acall_with_retry",
     "call_with_retry",
