@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    uses: damien-robotsix/robotsix-github-workflows/.github/workflows/python-ci.yml@43309967ea8011400212a8995d33ca900ee2afed
+    with:
+      python-version: "3.12"
+      uv-version: "0.8.15"
+      cov-package: "robotsix_http"
+      coverage-threshold: "80"
+      install-extras: ""
+      run-deptry: true
+      run-audit: false
+      run-bandit: false
+      bandit-severity: "medium"
+      mypy-advisory: false
+      pytest-args: ""
+      pytest-numprocesses: "auto"
+      runs-on: "ubuntu-latest"
+    secrets: inherit
