@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.0.0 (unreleased)
 
+- Fixed structural corruption in `.github/dependabot.yml` where the `uv` entry was incorrectly placed inside the `github-actions` block instead of as a sibling entry, and restored the `github-actions` properties that were displaced
 - Add `py.typed` marker file for PEP 561 compliance, enabling downstream type checkers to use inline annotations.
 - Expanded `README.md` with installation instructions, quick-start usage examples, API overview, and idempotency gating documentation.
 - Extract the duplicate ``_invoke`` inner function from ``call_with_retry`` and ``acall_with_retry`` into a module-level ``_invoke`` helper, and extract the shared ``cfg``/``transient`` resolution into ``_resolve_config``.

@@ -9,6 +9,12 @@ updates:
       actions-all:
         patterns: ["*"]
 
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+
   - package-ecosystem: "pre-commit"
     directory: "/"
     schedule:
