@@ -200,6 +200,24 @@ def _drive_sync[T](coro: Coroutine[Any, Any, T]) -> T:
     return asyncio.run(coro)
 
 
+def _resolve_config(
+    config: RetryConfig | None,
+    is_transient_fn: Callable[[Exception], bool] | None,
+) -> tuple[RetryConfig, Callable[[Exception], bool]]:
+    """Return ``(config, is_transient_fn)`` with defaults applied when ``None``."""
+    cfg = config if config is not None else RetryConfig()
+    transient = is_transient_fn if is_transient_fn is not None else is_transient
+    return cfg, transient
+
+
+async def _invoke[T](f: Callable[..., T]) -> T:
+    """Call *f* and ``await`` the result when it is awaitable."""
+    result = f()
+    if inspect.isawaitable(result):
+        return await result  # type: ignore
+    return result
+
+
 def call_with_retry[T](
     fn: Callable[..., T],
     *,
@@ -219,14 +237,7 @@ def call_with_retry[T](
     Returns:
         The return value of *fn*.
     """
-    cfg = config if config is not None else RetryConfig()
-    transient = is_transient_fn if is_transient_fn is not None else is_transient
-
-    async def _invoke(f: Callable[..., T]) -> T:
-        result = f()
-        if inspect.isawaitable(result):
-            return await result  # type: ignore
-        return result
+    cfg, transient = _resolve_config(config, is_transient_fn)
 
     return _drive_sync(
         _retry_loop(
@@ -259,14 +270,7 @@ async def acall_with_retry[T](
     Returns:
         The return value of *fn*.
     """
-    cfg = config if config is not None else RetryConfig()
-    transient = is_transient_fn if is_transient_fn is not None else is_transient
-
-    async def _invoke(f: Callable[..., T]) -> T:
-        result = f()
-        if inspect.isawaitable(result):
-            return await result  # type: ignore
-        return result
+    cfg, transient = _resolve_config(config, is_transient_fn)
 
     return await _retry_loop(
         fn,
