@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.0.0 (unreleased)
 
+- Add `py.typed` marker file for PEP 561 compliance, enabling downstream type checkers to use inline annotations.
 - Expanded `README.md` with installation instructions, quick-start usage examples, API overview, and idempotency gating documentation.
 - Add `test_gap` periodic workflow to detect coverage regressions
 - Enable health periodic workflow by adding `.robotsix-mill/periodic/health.yaml`.
