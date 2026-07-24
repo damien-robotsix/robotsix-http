@@ -468,7 +468,7 @@ class TestRetryClientMisc:
 
     async def test_convenience_methods(self) -> None:
         """Smoke test that get/post/patch/delete all work."""
-        for method_name in ("get", "post", "patch", "delete"):
+        for method_name in ("get", "post", "patch", "delete", "put", "head", "options"):
             upper_method = method_name.upper()
             transport = httpx.MockTransport(
                 lambda _r, m=upper_method: httpx.Response(200, json={"method": m})
