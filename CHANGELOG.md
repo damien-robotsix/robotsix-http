@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.0.0 (unreleased)
 
+- Add standard repo-hygiene pre-commit hooks (trailing-whitespace, end-of-file-fixer, check-yaml, check-toml, check-added-large-files).
 - Enable `copy_paste` periodic workflow for jscpd-based duplication detection
 - Enable bc_check periodic workflow by adding `.robotsix-mill/periodic/bc_check.yaml`.
 - Add `put`, `head`, and `options` convenience methods to `RetryClient`.
