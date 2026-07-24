@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.0.0 (unreleased)
 
+- Enable bc_check periodic workflow by adding `.robotsix-mill/periodic/bc_check.yaml`.
 - Add `put`, `head`, and `options` convenience methods to `RetryClient`.
 - Fixed structural corruption in `.github/dependabot.yml` where the `uv` entry was incorrectly placed inside the `github-actions` block instead of as a sibling entry, and restored the `github-actions` properties that were displaced
 - Add `py.typed` marker file for PEP 561 compliance, enabling downstream type checkers to use inline annotations.
