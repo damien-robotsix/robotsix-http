@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `py.typed` marker file for PEP 561 compliance, enabling downstream type checkers to use inline annotations.
 - Expanded `README.md` with installation instructions, quick-start usage examples, API overview, and idempotency gating documentation.
+- Extract the duplicate ``_invoke`` inner function from ``call_with_retry`` and ``acall_with_retry`` into a module-level ``_invoke`` helper, and extract the shared ``cfg``/``transient`` resolution into ``_resolve_config``.
 - Add `test_gap` periodic workflow to detect coverage regressions
 - Enable health periodic workflow by adding `.robotsix-mill/periodic/health.yaml`.
 - Add `robotsix_http.client` module with async `RetryClient` wrapping `httpx.AsyncClient`, providing method-idempotency gates, `Retry-After` header support, and a typed exception hierarchy (`ExternalHTTPError`, `ExternalAuthError`, `ExternalRateLimitError`, `ExternalServiceError`).
