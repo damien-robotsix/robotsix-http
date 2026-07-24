@@ -51,7 +51,7 @@ jobs:
           UV_MALWARE_CHECK: "1"
 
       - name: Run uv audit
-        run: uv audit --frozen --output-format sarif --preview --output uv-audit-results.sarif
+        run: uv audit --frozen --output-format sarif > uv-audit-results.sarif
         env:
           UV_PROJECT_ENVIRONMENT: system
 
