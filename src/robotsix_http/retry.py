@@ -53,11 +53,6 @@ def _status(exc: BaseException) -> int | None:
         status = getattr(response, "status_code", None)
         if isinstance(status, int):
             return status
-        # httpx.Response also exposes .status (an alias in some versions)
-        status = getattr(response, "status", None)
-        if isinstance(status, int):
-            return status
-
     return None
 
 
