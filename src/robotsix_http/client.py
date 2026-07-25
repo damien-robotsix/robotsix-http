@@ -259,7 +259,7 @@ class RetryClient:
                 await asyncio.sleep(delay)
 
         # Should be unreachable.
-        assert last_exc is not None  # pragma: no cover
+        assert last_exc is not None  # noqa: S101  # pragma: no cover
         raise _map_exception(last_exc)  # pragma: no cover
 
     # -- Internal helpers ----------------------------------------------------
