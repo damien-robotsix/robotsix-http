@@ -130,7 +130,7 @@ def _compute_backoff(attempt: int, config: RetryConfig) -> float:
         Backoff delay in seconds (always ≥ 0).
     """
     delay: float = min(config.backoff_base**attempt, config.backoff_cap)
-    jitter: float = delay * config.jitter_factor * random.random()
+    jitter: float = delay * config.jitter_factor * random.random()  # noqa: S311
     return delay - jitter
 
 
@@ -181,7 +181,7 @@ async def _retry_loop[T](
             await sleep_fn(delay)
 
     # Should be unreachable — satisfy the type checker.
-    assert last_exc is not None  # pragma: no cover
+    assert last_exc is not None  # noqa: S101  # pragma: no cover
     raise last_exc  # pragma: no cover
 
 
