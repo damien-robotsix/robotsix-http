@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.0.0 (unreleased)
 
+- Add `deptry` hook to `.pre-commit-config.yaml` for early detection of
+  import/dependency issues before commit, matching the CI `run-deptry` check.
 - Remove unreachable `.status` fallback from `_status()` in retry module.
   Add test covering the cause-chain `TransportError` path in `is_transient()`.
 - Add standard repo-hygiene pre-commit hooks (trailing-whitespace, end-of-file-fixer, check-yaml, check-toml, check-added-large-files).
