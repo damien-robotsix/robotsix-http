@@ -1,9 +1,22 @@
 modules:
-  - name: core
+  - id: core
     description: Core HTTP client primitives
     paths:
+      - .github/dependabot.yml
+      - .github/workflows/ci.yml
+      - .gitignore
+      - .pre-commit-config.yaml
+      - .robotsix-mill/periodic/**
+      - AGENT.md
+      - CHANGELOG.md
+      - LICENSE
+      - README.md
+      - SECURITY.md
+      - docs/modules.yaml
+      - pyproject.toml
       - src/robotsix_http/**
-  - name: tests
+      - uv.lock
+  - id: tests
     description: Test suite
     paths:
       - tests/**
