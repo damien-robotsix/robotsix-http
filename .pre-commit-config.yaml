@@ -18,3 +18,8 @@ repos:
     hooks:
       - id: mypy
         args: [--strict, src/]
+  - repo: https://github.com/osprey-oss/deptry
+    rev: 0.25.1
+    hooks:
+      - id: deptry
+        args: [src/, tests/]
