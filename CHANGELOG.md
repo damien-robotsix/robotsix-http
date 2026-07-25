@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.0.0 (unreleased)
 
+- Add `robotsix-modules` dev dependency (pinned git source) for module taxonomy validation.
 - Add `deptry` hook to `.pre-commit-config.yaml` for early detection of
   import/dependency issues before commit, matching the CI `run-deptry` check.
 - Remove unreachable `.status` fallback from `_status()` in retry module.
