@@ -153,6 +153,12 @@ class TestIsTransient:
         outer.__cause__ = inner
         assert is_transient(outer) is True
 
+    def test_cause_chain_transport_error(self) -> None:
+        inner = httpx.TransportError("transport error")
+        outer = RuntimeError("wrapper")
+        outer.__cause__ = inner
+        assert is_transient(outer) is True
+
     def test_non_transient(self) -> None:
         assert is_transient(ValueError("nope")) is False
 
