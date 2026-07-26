@@ -195,7 +195,7 @@ class RetryClient:
     async def put(
         self, url: str, *, config: RetryConfig | None = None, **kwargs: Any
     ) -> httpx.Response:
-        """Issue a PUT request with retry (idempotency-gated)."""
+        """Issue a PUT request with retry."""
         return await self.request("PUT", url, config=config, **kwargs)
 
     async def head(
@@ -207,7 +207,7 @@ class RetryClient:
     async def options(
         self, url: str, *, config: RetryConfig | None = None, **kwargs: Any
     ) -> httpx.Response:
-        """Issue an OPTIONS request with retry (idempotency-gated)."""
+        """Issue an OPTIONS request with retry."""
         return await self.request("OPTIONS", url, config=config, **kwargs)
 
     # -- Core request method -------------------------------------------------
