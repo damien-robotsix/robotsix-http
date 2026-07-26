@@ -40,7 +40,7 @@ def _status(exc: BaseException) -> int | None:
 
     Checks the exception itself for a ``status_code`` attribute, then
     falls back to ``exc.response.status_code`` (``httpx.HTTPStatusError``
-    shape) and ``exc.response.status``.
+    shape).
     """
     # Direct attribute on the exception
     status: Any = getattr(exc, "status_code", None)
