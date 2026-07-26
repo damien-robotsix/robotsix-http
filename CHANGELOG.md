@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.0.0 (unreleased)
 
+- Document `.put()`, `.head()`, and `.options()` convenience methods in the `RetryClient` API overview table row.
 - Add `exclude-newer = "7 days"` to `[tool.uv]` in `pyproject.toml` for supply-chain hardening
 - Remove misleading Python 3.12 and 3.13 classifiers from `pyproject.toml` — the package requires Python ≥3.14.
 - Fix stale docstring in `_status()` that referenced a removed ``exc.response.status`` fallback.
