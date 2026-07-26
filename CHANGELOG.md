@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `exclude-newer = "7 days"` to `[tool.uv]` in `pyproject.toml` for supply-chain hardening
 - Remove misleading Python 3.12 and 3.13 classifiers from `pyproject.toml` — the package requires Python ≥3.14.
 - Fix stale docstring in `_status()` that referenced a removed ``exc.response.status`` fallback.
+- Removed misleading `(idempotency-gated)` annotation from `put()` and `options()` docstrings — PUT and OPTIONS are already in `_SAFE_METHODS` and retried on all transient errors, matching `get()`, `delete()`, and `head()`.
 - Enable `module_size` periodic workflow to monitor module sizes and catch bloat before modules exceed 500 lines.
 - Add `robotsix-modules` dev dependency (pinned git source) for module taxonomy validation.
 - Add `deptry` hook to `.pre-commit-config.yaml` for early detection of
