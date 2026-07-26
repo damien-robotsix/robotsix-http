@@ -31,6 +31,9 @@ dev = [
     "robotsix-modules",
 ]
 
+[tool.uv]
+exclude-newer = "7d"
+
 [tool.uv.sources]
 robotsix-modules = { git = "https://github.com/damien-robotsix/robotsix-modules", rev = "f820c04b4e789f2be1a9625fab9f705fbbc51643" }
 
