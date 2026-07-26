@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.0.0 (unreleased)
 
+- Remove misleading Python 3.12 and 3.13 classifiers from `pyproject.toml` — the package requires Python ≥3.14.
 - Enable `module_size` periodic workflow to monitor module sizes and catch bloat before modules exceed 500 lines.
 - Add `robotsix-modules` dev dependency (pinned git source) for module taxonomy validation.
 - Add `deptry` hook to `.pre-commit-config.yaml` for early detection of
