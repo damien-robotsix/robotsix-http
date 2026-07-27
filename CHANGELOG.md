@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.0.0 (unreleased)
 
+- Remove `exclude-newer` from `[tool.uv]` in `pyproject.toml` — the
+  date-based filter was blocking Dependabot from resolving
+  recently-published package versions (e.g. mypy 2.3.0). The lockfile
+  already provides reproducible resolution.
 - Increase `exclude-newer` from 7d to 30d to prevent Dependabot from
   failing to resolve recently-published package versions (e.g. ruff 0.16.0).
 - Update `[tool.ruff] target-version` from ``py312`` to ``py314`` and `[tool.mypy] python_version` from ``3.12`` to ``3.14`` to match ``requires-python = ">=3.14"``.
