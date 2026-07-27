@@ -51,7 +51,7 @@ show_missing = true
 asyncio_mode = "auto"
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py314"
 line-length = 100
 
 [tool.ruff.lint]
@@ -62,7 +62,7 @@ select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "ARG", "S"]
 
 [tool.mypy]
 strict = true
-python_version = "3.12"
+python_version = "3.14"
 
 [tool.deptry.per_rule_ignores]
 DEP002 = ["httpx"]
