@@ -78,7 +78,7 @@ def _parse_retry_after(header: str) -> float | None:
         parsed = email.utils.parsedate_to_datetime(header)
         delta = (parsed - datetime.datetime.now(datetime.UTC)).total_seconds()
         return max(0.0, delta)
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return None
 
 
