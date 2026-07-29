@@ -101,7 +101,7 @@ class RetryConfig:
         backoff_cap: Maximum backoff delay in seconds (default 30.0).
         jitter_factor: Fraction of the computed delay to subtract as
             random jitter.  A factor of 0.5 means the actual delay
-            ranges from 50 % to 100 % of the computed value.
+            ranges from 50% to 100% of the computed value.
         on_retry: Optional callback invoked on each retry with
             ``(attempt: int, exception: Exception, delay: float)``.
             *attempt* is 1-indexed.

@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.0.0 (unreleased)
 
+- Replace two narrow no-break space characters (U+202F) with regular spaces in `RetryConfig.jitter_factor` docstring and add `"RUF"` to ruff lint select to catch similar issues.
 - Remove `exclude-newer` from `[tool.uv]` in `pyproject.toml` — the
   date-based filter was blocking Dependabot from resolving
   recently-published package versions (e.g. mypy 2.3.0). The lockfile
