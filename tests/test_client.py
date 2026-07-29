@@ -108,6 +108,18 @@ class TestIsRetryableForMethod:
         exc = httpx.HTTPStatusError("boom", request=request, response=response)
         assert _is_retryable_for_method("PUT", exc) is True
 
+    def test_head_retries_on_503(self) -> None:
+        request = httpx.Request("HEAD", "http://example.com")
+        response = httpx.Response(503, request=request)
+        exc = httpx.HTTPStatusError("boom", request=request, response=response)
+        assert _is_retryable_for_method("HEAD", exc) is True
+
+    def test_options_retries_on_503(self) -> None:
+        request = httpx.Request("OPTIONS", "http://example.com")
+        response = httpx.Response(503, request=request)
+        exc = httpx.HTTPStatusError("boom", request=request, response=response)
+        assert _is_retryable_for_method("OPTIONS", exc) is True
+
     def test_post_non_transient(self) -> None:
         assert _is_retryable_for_method("POST", ValueError("nope")) is False
 
