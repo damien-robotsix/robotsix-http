@@ -56,34 +56,43 @@ def _status(exc: BaseException) -> int | None:
     return None
 
 
+#: Exception class names treated as timeouts without importing the libraries
+#: that define them. ``openai.APITimeoutError`` does NOT subclass
+#: ``httpx.TimeoutException`` — it wraps one — and the wrapped original is not
+#: always reachable through ``__cause__``, so an isinstance check alone misses
+#: a hung model request.
+_TIMEOUT_CLASS_NAMES = frozenset({"APITimeoutError"})
+
+#: Transient exception types recognised anywhere in the cause chain.
+#: ``json.JSONDecodeError`` belongs here, not just at the top level: a model
+#: emitting malformed JSON for a tool call surfaces wrapped by the agent
+#: framework, and treating that as terminal hard-errors the whole run.
+_TRANSIENT_TYPES = (httpx.TimeoutException, httpx.TransportError, json.JSONDecodeError)
+
+
+def _is_transient_one(exc: BaseException) -> bool:
+    """Whether a SINGLE exception (ignoring its cause chain) is transient."""
+    if isinstance(exc, _TRANSIENT_TYPES):
+        return True
+    if type(exc).__name__ in _TIMEOUT_CLASS_NAMES:
+        return True
+    status = _status(exc)
+    return status is not None and (status == 429 or 500 <= status < 600)
+
+
 def is_transient(exc: BaseException) -> bool:
     """Return ``True`` for exceptions that warrant a retry.
 
-    Considered transient:
-    * ``httpx.TimeoutException``
-    * ``httpx.TransportError``
+    Considered transient, on the exception itself **or anywhere in its cause
+    chain** (agent/SDK layers routinely re-raise the real failure wrapped):
+
+    * ``httpx.TimeoutException`` / ``httpx.TransportError``
+    * a class named ``APITimeoutError`` (openai's, matched by name since it
+      does not subclass the httpx type)
     * ``json.JSONDecodeError``
-    * Any exception carrying HTTP status 429 or 5xx (checked on the
-      exception itself and throughout its cause chain).
+    * any exception carrying HTTP status 429 or 5xx
     """
-    if isinstance(exc, (httpx.TimeoutException, httpx.TransportError, json.JSONDecodeError)):
-        return True
-
-    status = _status(exc)
-    if status is not None and (status == 429 or 500 <= status < 600):
-        return True
-
-    # Walk the cause chain (skip *exc* itself — already checked above).
-    for cause in _walk_cause_chain(exc):
-        if cause is exc:
-            continue
-        if isinstance(cause, (httpx.TimeoutException, httpx.TransportError)):
-            return True
-        s = _status(cause)
-        if s is not None and (s == 429 or 500 <= s < 600):
-            return True
-
-    return False
+    return any(_is_transient_one(cause) for cause in _walk_cause_chain(exc))
 
 
 # ---------------------------------------------------------------------------

@@ -162,6 +162,44 @@ class TestIsTransient:
     def test_non_transient(self) -> None:
         assert is_transient(ValueError("nope")) is False
 
+    def test_jsondecode_error_transient(self) -> None:
+        assert is_transient(json.JSONDecodeError("Expecting value", "doc", 0)) is True
+
+    def test_cause_chain_jsondecode_error(self) -> None:
+        """A model emitting malformed JSON for a tool call surfaces wrapped by
+        the agent framework. Treating that as terminal hard-errors the run
+        instead of retrying it."""
+        inner = json.JSONDecodeError("Expecting value", "doc", 990)
+        outer = RuntimeError("agent run failed")
+        outer.__cause__ = inner
+        assert is_transient(outer) is True
+
+    def test_api_timeout_error_matched_by_class_name(self) -> None:
+        """``openai.APITimeoutError`` wraps an httpx timeout rather than
+        subclassing it, and the original is not always reachable via
+        ``__cause__`` — so a hung model request is matched by class name."""
+
+        class APITimeoutError(Exception):  # mimics openai's class name
+            pass
+
+        assert is_transient(APITimeoutError("deadline exceeded")) is True
+
+    def test_cause_chain_api_timeout_error(self) -> None:
+        class APITimeoutError(Exception):
+            pass
+
+        outer = RuntimeError("model request failed")
+        outer.__cause__ = APITimeoutError("deadline exceeded")
+        assert is_transient(outer) is True
+
+    def test_unrelated_class_name_not_transient(self) -> None:
+        """Name matching is narrow: only the known timeout class name."""
+
+        class APIError(Exception):
+            pass
+
+        assert is_transient(APIError("bad request")) is False
+
 
 # ---------------------------------------------------------------------------
 # RetryConfig
