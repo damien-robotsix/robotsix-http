@@ -16,6 +16,7 @@ modules:
       - pyproject.toml
       - src/robotsix_http/**
       - uv.lock
+      - changelog.d/*.md
   - id: tests
     description: Test suite
     paths:
