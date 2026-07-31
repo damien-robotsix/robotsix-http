@@ -4,6 +4,7 @@ modules:
     paths:
       - .github/dependabot.yml
       - .github/workflows/ci.yml
+      - .github/workflows/release.yml
       - .gitignore
       - .pre-commit-config.yaml
       - .robotsix-mill/periodic/**
