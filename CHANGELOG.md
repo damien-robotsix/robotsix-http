@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.0.0 (unreleased)
 
+- Add `check-merge-conflict` and `detect-private-key` pre-commit hooks from `pre-commit/pre-commit-hooks`.
 - Update pre-commit hook revisions: ruff to v0.15.20, mypy to v2.1.0 to match uv.lock.
 - Added `test_head_retries_on_503` and `test_options_retries_on_503` to `TestIsRetryableForMethod` in `tests/test_client.py`
 - Replace two narrow no-break space characters (U+202F) with regular spaces in `RetryConfig.jitter_factor` docstring and add `"RUF"` to ruff lint select to catch similar issues.
