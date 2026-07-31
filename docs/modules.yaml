@@ -16,9 +16,10 @@ modules:
       - docs/modules.yaml
       - pyproject.toml
       - src/robotsix_http/**
+      - tests/core/**
       - uv.lock
       - changelog.d/*.md
   - id: tests
     description: Test suite
     paths:
-      - tests/**
+      - tests/__init__.py
