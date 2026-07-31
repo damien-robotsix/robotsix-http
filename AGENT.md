@@ -21,6 +21,14 @@ uv run ruff check
 uv run mypy src/ --strict
 ```
 
+## Changelog / release
+
+- User-visible changes go in `changelog.d/` towncrier fragments
+  (`.feature.md` / `.bugfix.md` / `.misc.md` / `.breaking.md`).
+- Never edit the `### Fixed`/`### Added` release sections of
+  `CHANGELOG.md` directly — towncrier owns the rendered changelog
+  and regenerates it on release.
+
 ## CI
 
 Uses `damien-robotsix/robotsix-github-workflows` reusable workflows.
