@@ -51,6 +51,38 @@ class TestParseRetryAfter:
     def test_garbage_header(self) -> None:
         assert _parse_retry_after("not-a-date") is None
 
+    def test_none_input_returns_none(self) -> None:
+        """Regression: non-str/None input must not raise — returns None."""
+        assert _parse_retry_after(None) is None  # type: ignore[arg-type]
+
+
+class TestParseRetryAfterRegression:
+    """Regression tests guarding against reintroduction of import-breaking
+    syntax issues (e.g. Python 2-style ``except`` clauses).
+    """
+
+    def test_import_clean(self) -> None:
+        """``robotsix_http.client`` must import without SyntaxError."""
+        import robotsix_http.client
+
+        assert hasattr(robotsix_http.client, "_parse_retry_after")
+
+    def test_valid_rfc_date(self) -> None:
+        """Valid HTTP-date (RFC 1123) is parsed to a positive delay."""
+        future = datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=60)
+        header = email.utils.format_datetime(future, usegmt=True)
+        result = _parse_retry_after(header)
+        assert result is not None
+        assert result > 0.0
+
+    def test_invalid_http_date_returns_none(self) -> None:
+        """Unparseable HTTP-date string returns None."""
+        assert _parse_retry_after("not-a-valid-http-date") is None
+
+    def test_non_str_input_returns_none(self) -> None:
+        """Passing None (or any non-str falsy value) returns None safely."""
+        assert _parse_retry_after(None) is None  # type: ignore[arg-type]
+
 
 # ---------------------------------------------------------------------------
 # _is_retryable_for_method
