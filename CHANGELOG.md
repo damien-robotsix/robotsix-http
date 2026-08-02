@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.0.0 (unreleased)
 
+- Enable pytest `filterwarnings = ["error"]` in pyproject.toml to turn warnings into hard test failures.
 - Pin httpx to `<1.0` (`>=0.27,<1.0`) to protect against breaking changes in the pre-1.0 release series, and add the `Typing :: Typed` trove classifier.
 - Document towncrier fragment workflow in `AGENT.md` under a new "Changelog / release" section.
 - Add test-file layout rule to `AGENT.md` ## Structure: new tests live per-module under `tests/<module-id>/` mirroring `docs/modules.yaml`.
