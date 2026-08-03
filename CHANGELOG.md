@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.0.0 (unreleased)
 
+- Added `.robotsix-mill/config.yaml` with `languages: [python]` to declare the repo's language scope.
 - Enable pytest `filterwarnings = ["error"]` in pyproject.toml to turn warnings into hard test failures.
 - Format except clause per ruff formatter: remove unnecessary parentheses around ``except (ValueError, TypeError):`` → ``except ValueError, TypeError:`` (both forms are equivalent in Python 3.14+).
 - Pin httpx to `<1.0` (`>=0.27,<1.0`) to protect against breaking changes in the pre-1.0 release series, and add the `Typing :: Typed` trove classifier.
