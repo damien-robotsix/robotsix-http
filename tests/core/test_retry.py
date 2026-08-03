@@ -214,6 +214,7 @@ class TestRetryConfig:
         assert cfg.backoff_cap == 30.0
         assert cfg.jitter_factor == 0.5
         assert cfg.on_retry is None
+        assert cfg.on_retry_exhausted is None
 
     def test_frozen(self) -> None:
         import dataclasses
@@ -226,18 +227,23 @@ class TestRetryConfig:
         def _noop(_attempt: int, _exc: Exception, _delay: float) -> None:
             return
 
+        def _exhausted(_attempt: int, _exc: Exception) -> None:
+            return
+
         cfg = RetryConfig(
             max_retries=5,
             backoff_base=3.0,
             backoff_cap=60.0,
             jitter_factor=0.2,
             on_retry=_noop,
+            on_retry_exhausted=_exhausted,
         )
         assert cfg.max_retries == 5
         assert cfg.backoff_base == 3.0
         assert cfg.backoff_cap == 60.0
         assert cfg.jitter_factor == 0.2
         assert cfg.on_retry is _noop
+        assert cfg.on_retry_exhausted is _exhausted
 
 
 # ---------------------------------------------------------------------------
@@ -385,6 +391,53 @@ class TestCallWithRetrySync:
         assert isinstance(calls[1][1], httpx.TimeoutException)
         assert calls[1][2] == pytest.approx(2.0)  # 2^1 = 2.0
 
+    def test_on_retry_exhausted_callback(self) -> None:
+        """on_retry_exhausted fires on exhaustion with correct attempt count."""
+        exhausted_calls: list[tuple[int, Exception]] = []
+
+        def on_exhausted(attempt: int, exc: Exception) -> None:
+            exhausted_calls.append((attempt, exc))
+
+        call_count = 0
+
+        def fn() -> str:
+            nonlocal call_count
+            call_count += 1
+            raise httpx.TimeoutException("always times out")
+
+        with pytest.raises(httpx.TimeoutException, match="always times out"):
+            call_with_retry(
+                fn,
+                config=RetryConfig(
+                    max_retries=2, jitter_factor=0.0, on_retry_exhausted=on_exhausted
+                ),
+            )
+        assert call_count == 3  # 1 initial + 2 retries
+        assert len(exhausted_calls) == 1
+        assert exhausted_calls[0][0] == 3  # attempt is 1-indexed, total=3
+        assert isinstance(exhausted_calls[0][1], httpx.TimeoutException)
+
+    def test_on_retry_exhausted_fires_on_non_transient(self) -> None:
+        """on_retry_exhausted also fires on non-transient immediate raise."""
+        exhausted_calls: list[tuple[int, Exception]] = []
+
+        def on_exhausted(attempt: int, exc: Exception) -> None:
+            exhausted_calls.append((attempt, exc))
+
+        def fn() -> str:
+            raise ValueError("not transient")
+
+        with pytest.raises(ValueError, match="not transient"):
+            call_with_retry(
+                fn,
+                config=RetryConfig(
+                    max_retries=2, jitter_factor=0.0, on_retry_exhausted=on_exhausted
+                ),
+            )
+        assert len(exhausted_calls) == 1
+        assert exhausted_calls[0][0] == 1  # first attempt, 1-indexed
+        assert isinstance(exhausted_calls[0][1], ValueError)
+
     def test_async_fn_sync_wrapper(self) -> None:
         async def fn() -> str:
             return "async-ok"
@@ -496,6 +549,53 @@ class TestACallWithRetry:
         assert calls[1][0] == 2
         assert isinstance(calls[1][1], httpx.TimeoutException)
         assert calls[1][2] == pytest.approx(2.0)
+
+    async def test_on_retry_exhausted_callback(self) -> None:
+        """on_retry_exhausted fires on exhaustion with correct attempt count."""
+        exhausted_calls: list[tuple[int, Exception]] = []
+
+        def on_exhausted(attempt: int, exc: Exception) -> None:
+            exhausted_calls.append((attempt, exc))
+
+        call_count = 0
+
+        async def fn() -> str:
+            nonlocal call_count
+            call_count += 1
+            raise httpx.TimeoutException("always times out")
+
+        with pytest.raises(httpx.TimeoutException, match="always times out"):
+            await acall_with_retry(
+                fn,
+                config=RetryConfig(
+                    max_retries=2, jitter_factor=0.0, on_retry_exhausted=on_exhausted
+                ),
+            )
+        assert call_count == 3
+        assert len(exhausted_calls) == 1
+        assert exhausted_calls[0][0] == 3
+        assert isinstance(exhausted_calls[0][1], httpx.TimeoutException)
+
+    async def test_on_retry_exhausted_fires_on_non_transient(self) -> None:
+        """on_retry_exhausted also fires on non-transient immediate raise."""
+        exhausted_calls: list[tuple[int, Exception]] = []
+
+        def on_exhausted(attempt: int, exc: Exception) -> None:
+            exhausted_calls.append((attempt, exc))
+
+        async def fn() -> str:
+            raise ValueError("not transient")
+
+        with pytest.raises(ValueError, match="not transient"):
+            await acall_with_retry(
+                fn,
+                config=RetryConfig(
+                    max_retries=2, jitter_factor=0.0, on_retry_exhausted=on_exhausted
+                ),
+            )
+        assert len(exhausted_calls) == 1
+        assert exhausted_calls[0][0] == 1
+        assert isinstance(exhausted_calls[0][1], ValueError)
 
     async def test_sync_fn_async_wrapper(self) -> None:
         def fn() -> str:

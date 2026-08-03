@@ -507,6 +507,32 @@ class TestRetryClientMisc:
             # max_retries=0 → 1 total attempt, no retries.
             assert call_count == 1
 
+    async def test_on_retry_exhausted_fires_on_exhaustion(self) -> None:
+        """on_retry_exhausted fires when a 5xx response exhausts retries."""
+        exhausted_calls: list[tuple[int, Exception]] = []
+
+        def on_exhausted(attempt: int, exc: Exception) -> None:
+            exhausted_calls.append((attempt, exc))
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(503, request=request)
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(transport=transport) as client:
+            rc = RetryClient(
+                client,
+                config=RetryConfig(
+                    max_retries=2,
+                    jitter_factor=0.0,
+                    on_retry_exhausted=on_exhausted,
+                ),
+            )
+            with pytest.raises(ExternalServiceError):
+                await rc.get("http://example.com")
+        assert len(exhausted_calls) == 1
+        assert exhausted_calls[0][0] == 3  # 1 initial + 2 retries = 3 total
+        assert isinstance(exhausted_calls[0][1], httpx.HTTPStatusError)
+
     async def test_convenience_methods(self) -> None:
         """Smoke test that get/post/patch/delete all work."""
         for method_name in ("get", "post", "patch", "delete", "put", "head", "options"):
