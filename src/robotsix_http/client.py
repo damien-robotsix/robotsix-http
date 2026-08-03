@@ -249,8 +249,12 @@ class RetryClient:
             except Exception as exc:
                 last_exc = exc
                 if attempt == cfg.max_retries:
+                    if cfg.on_retry_exhausted is not None:
+                        cfg.on_retry_exhausted(attempt + 1, exc)
                     raise _map_exception(exc) from exc
                 if not _is_retryable_for_method(method, exc):
+                    if cfg.on_retry_exhausted is not None:
+                        cfg.on_retry_exhausted(attempt + 1, exc)
                     raise _map_exception(exc) from exc
 
                 delay = self._compute_delay(attempt, exc, cfg)

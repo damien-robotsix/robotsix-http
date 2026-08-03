@@ -114,6 +114,11 @@ class RetryConfig:
         on_retry: Optional callback invoked on each retry with
             ``(attempt: int, exception: Exception, delay: float)``.
             *attempt* is 1-indexed.
+        on_retry_exhausted: Optional callback invoked when retries are
+            exhausted or a non-transient exception is encountered,
+            immediately before the final raise.  Receives
+            ``(attempt: int, exception: Exception)`` where *attempt*
+            is the 1-indexed total attempt count (1 initial + retries).
     """
 
     max_retries: int = 4
@@ -121,6 +126,7 @@ class RetryConfig:
     backoff_cap: float = 30.0
     jitter_factor: float = 0.5
     on_retry: Callable[[int, Exception, float], None] | None = None
+    on_retry_exhausted: Callable[[int, Exception], None] | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -181,8 +187,12 @@ async def _retry_loop[T](
         except Exception as exc:
             last_exc = exc
             if attempt == config.max_retries:
+                if config.on_retry_exhausted is not None:
+                    config.on_retry_exhausted(attempt + 1, exc)
                 raise
             if not is_transient_fn(exc):
+                if config.on_retry_exhausted is not None:
+                    config.on_retry_exhausted(attempt + 1, exc)
                 raise
             delay = _compute_backoff(attempt, config)
             if config.on_retry is not None:
