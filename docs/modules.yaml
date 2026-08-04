@@ -7,6 +7,7 @@ modules:
       - .github/workflows/release.yml
       - .gitignore
       - .pre-commit-config.yaml
+      - .robotsix-mill/config.yaml
       - .robotsix-mill/periodic/**
       - AGENT.md
       - CHANGELOG.md
