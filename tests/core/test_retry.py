@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 import json
 from unittest import mock
 
@@ -484,18 +485,7 @@ class TestCallWithRetrySync:
         with (
             mock.patch(
                 "time.monotonic",
-                side_effect=[
-                    0.0,
-                    10.0,
-                    10.0,
-                    10.0,
-                    10.0,
-                    10.0,
-                    10.0,
-                    10.0,
-                    10.0,
-                    10.0,
-                ],
+                side_effect=itertools.chain([0.0], itertools.repeat(10.0)),
             ),
             pytest.raises(httpx.TimeoutException, match="always times out"),
         ):
@@ -526,7 +516,7 @@ class TestCallWithRetrySync:
         # First attempt finishes at t=0.5, deadline is 5 s → remaining = 4.5.
         # The computed backoff for attempt 0 is 1.0 (with jitter_factor=0),
         # which is less than 4.5 → delay should be 1.0 (uncapped).
-        with mock.patch("time.monotonic", side_effect=[0.0, 0.5]):
+        with mock.patch("time.monotonic", side_effect=itertools.chain([0.0, 0.5], itertools.repeat(5.0))):
             result = call_with_retry(
                 fn,
                 config=RetryConfig(jitter_factor=0.0, stop_after_delay=5.0, on_retry=on_retry),
@@ -556,7 +546,7 @@ class TestCallWithRetrySync:
 
         # First attempt finishes at t=4.9, deadline is 5 s → remaining = 0.1.
         # The computed backoff for attempt 0 is 1.0 → capped to 0.1.
-        with mock.patch("time.monotonic", side_effect=[0.0, 4.9]):
+        with mock.patch("time.monotonic", side_effect=itertools.chain([0.0, 4.9], itertools.repeat(5.0))):
             result = call_with_retry(
                 fn,
                 config=RetryConfig(jitter_factor=0.0, stop_after_delay=5.0, on_retry=on_retry),
@@ -601,18 +591,7 @@ class TestCallWithRetrySync:
         with (
             mock.patch(
                 "time.monotonic",
-                side_effect=[
-                    0.0,
-                    10.0,
-                    10.0,
-                    10.0,
-                    10.0,
-                    10.0,
-                    10.0,
-                    10.0,
-                    10.0,
-                    10.0,
-                ],
+                side_effect=itertools.chain([0.0], itertools.repeat(10.0)),
             ),
             pytest.raises(httpx.TimeoutException, match="timeout"),
         ):
