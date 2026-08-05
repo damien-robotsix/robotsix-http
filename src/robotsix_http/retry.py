@@ -12,6 +12,7 @@ import inspect
 import json
 import logging
 import random
+import time
 from collections.abc import Callable, Coroutine
 from typing import Any
 
@@ -114,6 +115,13 @@ class RetryConfig:
         jitter_factor: Fraction of the computed delay to subtract as
             random jitter.  A factor of 0.5 means the actual delay
             ranges from 50% to 100% of the computed value.
+        stop_after_delay: Optional wall-clock deadline in seconds.
+            If set, the total elapsed time (including all attempts and
+            sleeps) is bounded by this value.  After a failure,
+            ``on_retry_exhausted`` fires and the last exception is
+            re-raised when the deadline is exceeded rather than
+            sleeping past it.  ``None`` preserves the existing
+            unbounded behaviour.
         on_retry: Optional callback invoked on each retry with
             ``(attempt: int, exception: Exception, delay: float)``.
             *attempt* is 1-indexed.
@@ -128,6 +136,7 @@ class RetryConfig:
     backoff_base: float = 2.0
     backoff_cap: float = 30.0
     jitter_factor: float = 0.5
+    stop_after_delay: float | None = None
     on_retry: Callable[[int, Exception, float], None] | None = None
     on_retry_exhausted: Callable[[int, Exception], None] | None = None
 
@@ -184,6 +193,7 @@ async def _retry_loop[T](
         error is non-transient.
     """
     last_exc: Exception | None = None
+    start = time.monotonic()
     for attempt in range(config.max_retries + 1):
         try:
             return await invoke(fn)
@@ -200,6 +210,16 @@ async def _retry_loop[T](
                 logger.debug("retries exhausted after %d attempt(s): %s", attempt + 1, exc)
                 raise
             delay = _compute_backoff(attempt, config)
+            # Wall-clock deadline: abort before sleeping past it.
+            if config.stop_after_delay is not None:
+                elapsed = time.monotonic() - start
+                if elapsed >= config.stop_after_delay:
+                    if config.on_retry_exhausted is not None:
+                        config.on_retry_exhausted(attempt + 1, exc)
+                    raise
+                remaining = config.stop_after_delay - elapsed
+                if delay > remaining:
+                    delay = remaining
             if config.on_retry is not None:
                 config.on_retry(attempt + 1, exc, delay)
             logger.debug(

@@ -213,6 +213,7 @@ class TestRetryConfig:
         assert cfg.backoff_base == 2.0
         assert cfg.backoff_cap == 30.0
         assert cfg.jitter_factor == 0.5
+        assert cfg.stop_after_delay is None
         assert cfg.on_retry is None
         assert cfg.on_retry_exhausted is None
 
@@ -235,6 +236,7 @@ class TestRetryConfig:
             backoff_base=3.0,
             backoff_cap=60.0,
             jitter_factor=0.2,
+            stop_after_delay=10.0,
             on_retry=_noop,
             on_retry_exhausted=_exhausted,
         )
@@ -242,6 +244,7 @@ class TestRetryConfig:
         assert cfg.backoff_base == 3.0
         assert cfg.backoff_cap == 60.0
         assert cfg.jitter_factor == 0.2
+        assert cfg.stop_after_delay == 10.0
         assert cfg.on_retry is _noop
         assert cfg.on_retry_exhausted is _exhausted
 
@@ -466,6 +469,139 @@ class TestCallWithRetrySync:
         assert result == "ok"
         assert call_count == 2
 
+    def test_stop_after_delay_aborts_before_sleep(self) -> None:
+        """When the deadline is exceeded after a failure, the loop aborts
+        before sleeping and re-raises the last exception."""
+        call_count = 0
+
+        def fn() -> str:
+            nonlocal call_count
+            call_count += 1
+            raise httpx.TimeoutException("always times out")
+
+        # Simulate time advancing: first attempt at t=0, then jump past
+        # the 5 s deadline so the sleep is never reached.
+        with (
+            mock.patch("time.monotonic", side_effect=[0.0, 10.0]),
+            pytest.raises(httpx.TimeoutException, match="always times out"),
+        ):
+            call_with_retry(
+                fn,
+                config=RetryConfig(max_retries=4, jitter_factor=0.0, stop_after_delay=5.0),
+            )
+        # Only one attempt — deadline aborted before the first sleep.
+        assert call_count == 1
+
+    def test_stop_after_delay_caps_sleep_to_remaining_budget(self) -> None:
+        """When there is remaining budget, the sleep delay is capped so it
+        never exceeds the remaining time."""
+        delays: list[float] = []
+
+        def on_retry(_attempt: int, _exc: Exception, delay: float) -> None:
+            delays.append(delay)
+
+        call_count = 0
+
+        def fn() -> str:
+            nonlocal call_count
+            call_count += 1
+            if call_count < 2:
+                raise httpx.TimeoutException("timeout")
+            return "ok"
+
+        # First attempt finishes at t=0.5, deadline is 5 s → remaining = 4.5.
+        # The computed backoff for attempt 0 is 1.0 (with jitter_factor=0),
+        # which is less than 4.5 → delay should be 1.0 (uncapped).
+        with mock.patch("time.monotonic", side_effect=[0.0, 0.5]):
+            result = call_with_retry(
+                fn,
+                config=RetryConfig(jitter_factor=0.0, stop_after_delay=5.0, on_retry=on_retry),
+            )
+        assert result == "ok"
+        assert call_count == 2
+        assert len(delays) == 1
+        # Backoff for attempt 0 = 2^0 = 1.0, remaining budget = 4.5, uncapped.
+        assert delays[0] == pytest.approx(1.0)
+
+    def test_stop_after_delay_caps_large_backoff(self) -> None:
+        """When the computed backoff exceeds the remaining budget, the
+        delay is clamped to the remaining time."""
+        delays: list[float] = []
+
+        def on_retry(_attempt: int, _exc: Exception, delay: float) -> None:
+            delays.append(delay)
+
+        call_count = 0
+
+        def fn() -> str:
+            nonlocal call_count
+            call_count += 1
+            if call_count < 2:
+                raise httpx.TimeoutException("timeout")
+            return "ok"
+
+        # First attempt finishes at t=4.9, deadline is 5 s → remaining = 0.1.
+        # The computed backoff for attempt 0 is 1.0 → capped to 0.1.
+        with mock.patch("time.monotonic", side_effect=[0.0, 4.9]):
+            result = call_with_retry(
+                fn,
+                config=RetryConfig(jitter_factor=0.0, stop_after_delay=5.0, on_retry=on_retry),
+            )
+        assert result == "ok"
+        assert call_count == 2
+        assert len(delays) == 1
+        assert delays[0] == pytest.approx(0.1)
+
+    def test_stop_after_delay_none_is_unbounded(self) -> None:
+        """``stop_after_delay=None`` (the default) preserves existing
+        unbounded behaviour — retries proceed until max_retries is hit."""
+        call_count = 0
+
+        def fn() -> str:
+            nonlocal call_count
+            call_count += 1
+            raise httpx.TimeoutException("always times out")
+
+        with pytest.raises(httpx.TimeoutException):
+            call_with_retry(
+                fn,
+                config=RetryConfig(max_retries=2, jitter_factor=0.0, stop_after_delay=None),
+            )
+        # 1 initial + 2 retries = 3 total.
+        assert call_count == 3
+
+    def test_stop_after_delay_exhausted_fires_callback(self) -> None:
+        """``on_retry_exhausted`` fires when the deadline is exceeded."""
+        exhausted_calls: list[tuple[int, Exception]] = []
+
+        def on_exhausted(attempt: int, exc: Exception) -> None:
+            exhausted_calls.append((attempt, exc))
+
+        call_count = 0
+
+        def fn() -> str:
+            nonlocal call_count
+            call_count += 1
+            raise httpx.TimeoutException("timeout")
+
+        with (
+            mock.patch("time.monotonic", side_effect=[0.0, 10.0]),
+            pytest.raises(httpx.TimeoutException, match="timeout"),
+        ):
+            call_with_retry(
+                fn,
+                config=RetryConfig(
+                    max_retries=4,
+                    jitter_factor=0.0,
+                    stop_after_delay=5.0,
+                    on_retry_exhausted=on_exhausted,
+                ),
+            )
+        assert call_count == 1
+        assert len(exhausted_calls) == 1
+        assert exhausted_calls[0][0] == 1  # attempt is 1-indexed
+        assert isinstance(exhausted_calls[0][1], httpx.TimeoutException)
+
 
 # ---------------------------------------------------------------------------
 # acall_with_retry (async)
@@ -624,3 +760,72 @@ class TestACallWithRetry:
         )
         assert result == "ok"
         assert call_count == 2
+
+    async def test_stop_after_delay_aborts_before_sleep(self) -> None:
+        """When the deadline is exceeded after a failure, the loop aborts
+        before sleeping and re-raises the last exception."""
+        call_count = 0
+
+        async def fn() -> str:
+            nonlocal call_count
+            call_count += 1
+            raise httpx.TimeoutException("always times out")
+
+        with (
+            mock.patch("time.monotonic", side_effect=[0.0, 10.0]),
+            pytest.raises(httpx.TimeoutException, match="always times out"),
+        ):
+            await acall_with_retry(
+                fn,
+                config=RetryConfig(max_retries=4, jitter_factor=0.0, stop_after_delay=5.0),
+            )
+        assert call_count == 1
+
+    async def test_stop_after_delay_none_is_unbounded(self) -> None:
+        """``stop_after_delay=None`` (the default) preserves existing
+        unbounded behaviour."""
+        call_count = 0
+
+        async def fn() -> str:
+            nonlocal call_count
+            call_count += 1
+            raise httpx.TimeoutException("always times out")
+
+        with pytest.raises(httpx.TimeoutException):
+            await acall_with_retry(
+                fn,
+                config=RetryConfig(max_retries=2, jitter_factor=0.0, stop_after_delay=None),
+            )
+        assert call_count == 3
+
+    async def test_stop_after_delay_exhausted_fires_callback(self) -> None:
+        """``on_retry_exhausted`` fires when the deadline is exceeded."""
+        exhausted_calls: list[tuple[int, Exception]] = []
+
+        def on_exhausted(attempt: int, exc: Exception) -> None:
+            exhausted_calls.append((attempt, exc))
+
+        call_count = 0
+
+        async def fn() -> str:
+            nonlocal call_count
+            call_count += 1
+            raise httpx.TimeoutException("timeout")
+
+        with (
+            mock.patch("time.monotonic", side_effect=[0.0, 10.0]),
+            pytest.raises(httpx.TimeoutException, match="timeout"),
+        ):
+            await acall_with_retry(
+                fn,
+                config=RetryConfig(
+                    max_retries=4,
+                    jitter_factor=0.0,
+                    stop_after_delay=5.0,
+                    on_retry_exhausted=on_exhausted,
+                ),
+            )
+        assert call_count == 1
+        assert len(exhausted_calls) == 1
+        assert exhausted_calls[0][0] == 1
+        assert isinstance(exhausted_calls[0][1], httpx.TimeoutException)

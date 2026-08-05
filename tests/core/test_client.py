@@ -6,6 +6,7 @@ import datetime
 import email.utils
 import subprocess
 import sys
+from unittest import mock
 
 import httpx
 import pytest
@@ -532,6 +533,117 @@ class TestRetryClientMisc:
         assert len(exhausted_calls) == 1
         assert exhausted_calls[0][0] == 3  # 1 initial + 2 retries = 3 total
         assert isinstance(exhausted_calls[0][1], httpx.HTTPStatusError)
+
+    async def test_stop_after_delay_aborts_before_sleep(self) -> None:
+        """When the deadline is exceeded, the client aborts before sleeping
+        and maps the exception."""
+        call_count = 0
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal call_count
+            call_count += 1
+            return httpx.Response(503, request=request)
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(transport=transport) as client:
+            rc = RetryClient(
+                client,
+                config=RetryConfig(max_retries=4, jitter_factor=0.0, stop_after_delay=5.0),
+            )
+            with (
+                mock.patch("time.monotonic", side_effect=[0.0, 10.0]),
+                pytest.raises(ExternalServiceError),
+            ):
+                await rc.get("http://example.com")
+            assert call_count == 1
+
+    async def test_stop_after_delay_none_is_unbounded(self) -> None:
+        """``stop_after_delay=None`` (the default) preserves unbounded behaviour."""
+        call_count = 0
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal call_count
+            call_count += 1
+            return httpx.Response(503, request=request)
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(transport=transport) as client:
+            rc = RetryClient(
+                client,
+                config=RetryConfig(max_retries=2, jitter_factor=0.0, stop_after_delay=None),
+            )
+            with pytest.raises(ExternalServiceError):
+                await rc.get("http://example.com")
+            # 1 initial + 2 retries = 3 total.
+            assert call_count == 3
+
+    async def test_stop_after_delay_exhausted_fires_callback(self) -> None:
+        """``on_retry_exhausted`` fires when the deadline is exceeded."""
+        exhausted_calls: list[tuple[int, Exception]] = []
+
+        def on_exhausted(attempt: int, exc: Exception) -> None:
+            exhausted_calls.append((attempt, exc))
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(503, request=request)
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(transport=transport) as client:
+            rc = RetryClient(
+                client,
+                config=RetryConfig(
+                    max_retries=4,
+                    jitter_factor=0.0,
+                    stop_after_delay=5.0,
+                    on_retry_exhausted=on_exhausted,
+                ),
+            )
+            with (
+                mock.patch("time.monotonic", side_effect=[0.0, 10.0]),
+                pytest.raises(ExternalServiceError),
+            ):
+                await rc.get("http://example.com")
+        assert len(exhausted_calls) == 1
+        assert exhausted_calls[0][0] == 1
+        assert isinstance(exhausted_calls[0][1], httpx.HTTPStatusError)
+
+    async def test_stop_after_delay_caps_retry_after(self) -> None:
+        """When a 429 carries a Retry-After that would exceed the remaining
+        budget, the delay is capped."""
+        call_count = 0
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return _make_429_response(request, retry_after="30")
+            return httpx.Response(200, request=request)
+
+        delays: list[float] = []
+
+        def on_retry(_attempt: int, _exc: Exception, delay: float) -> None:
+            delays.append(delay)
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(transport=transport) as client:
+            rc = RetryClient(
+                client,
+                config=RetryConfig(
+                    max_retries=2,
+                    jitter_factor=0.0,
+                    stop_after_delay=5.0,
+                    on_retry=on_retry,
+                ),
+            )
+            # First attempt finishes at t=0.2, remaining = 4.8.
+            # Retry-After is 30, but capped to 4.8.
+            with mock.patch("time.monotonic", side_effect=[0.0, 0.2]):
+                response = await rc.get("http://example.com")
+            assert response.status_code == 200
+            assert call_count == 2
+
+        assert len(delays) == 1
+        assert delays[0] == pytest.approx(4.8)
 
     async def test_convenience_methods(self) -> None:
         """Smoke test that get/post/patch/delete all work."""

@@ -10,6 +10,7 @@ import datetime
 import email.utils
 import logging
 import re
+import time
 from typing import Any
 
 import httpx
@@ -244,6 +245,7 @@ class RetryClient:
         cfg = config if config is not None else self._config
 
         last_exc: Exception | None = None
+        start = time.monotonic()
         for attempt in range(cfg.max_retries + 1):
             try:
                 response = await self._client.request(method, url, **kwargs)
@@ -263,6 +265,16 @@ class RetryClient:
                     raise _map_exception(exc) from exc
 
                 delay = self._compute_delay(attempt, exc, cfg)
+                # Wall-clock deadline: abort before sleeping past it.
+                if cfg.stop_after_delay is not None:
+                    elapsed = time.monotonic() - start
+                    if elapsed >= cfg.stop_after_delay:
+                        if cfg.on_retry_exhausted is not None:
+                            cfg.on_retry_exhausted(attempt + 1, exc)
+                        raise _map_exception(exc) from exc
+                    remaining = cfg.stop_after_delay - elapsed
+                    if delay > remaining:
+                        delay = remaining
                 if cfg.on_retry is not None:
                     cfg.on_retry(attempt + 1, exc, delay)
                 logger.debug(
