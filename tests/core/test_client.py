@@ -637,7 +637,10 @@ class TestRetryClientMisc:
             )
             # First attempt finishes at t=0.2, remaining = 4.8.
             # Retry-After is 30, but capped to 4.8.
-            with mock.patch("time.monotonic", side_effect=[0.0, 0.2]):
+            with (
+                mock.patch("time.monotonic", side_effect=[0.0, 0.2]),
+                mock.patch("asyncio.sleep", new_callable=mock.AsyncMock),
+            ):
                 response = await rc.get("http://example.com")
             assert response.status_code == 200
             assert call_count == 2

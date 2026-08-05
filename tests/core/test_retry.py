@@ -482,7 +482,7 @@ class TestCallWithRetrySync:
         # Simulate time advancing: first attempt at t=0, then jump past
         # the 5 s deadline so the sleep is never reached.
         with (
-            mock.patch("time.monotonic", side_effect=[0.0, 10.0]),
+            mock.patch("time.monotonic", side_effect=[0.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]),
             pytest.raises(httpx.TimeoutException, match="always times out"),
         ):
             call_with_retry(
@@ -585,7 +585,7 @@ class TestCallWithRetrySync:
             raise httpx.TimeoutException("timeout")
 
         with (
-            mock.patch("time.monotonic", side_effect=[0.0, 10.0]),
+            mock.patch("time.monotonic", side_effect=[0.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]),
             pytest.raises(httpx.TimeoutException, match="timeout"),
         ):
             call_with_retry(
