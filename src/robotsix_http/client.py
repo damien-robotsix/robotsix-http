@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import datetime
 import email.utils
+import logging
 import re
 from typing import Any
 
@@ -18,6 +19,8 @@ from robotsix_http.retry import (
     _compute_backoff,
     is_transient,
 )
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Default configuration (module-level singleton)
@@ -251,15 +254,24 @@ class RetryClient:
                 if attempt == cfg.max_retries:
                     if cfg.on_retry_exhausted is not None:
                         cfg.on_retry_exhausted(attempt + 1, exc)
+                    logger.debug("retries exhausted after %d attempt(s): %s", attempt + 1, exc)
                     raise _map_exception(exc) from exc
                 if not _is_retryable_for_method(method, exc):
                     if cfg.on_retry_exhausted is not None:
                         cfg.on_retry_exhausted(attempt + 1, exc)
+                    logger.debug("retries exhausted after %d attempt(s): %s", attempt + 1, exc)
                     raise _map_exception(exc) from exc
 
                 delay = self._compute_delay(attempt, exc, cfg)
                 if cfg.on_retry is not None:
                     cfg.on_retry(attempt + 1, exc, delay)
+                logger.debug(
+                    "retry attempt %d/%d failed (%s); next in %.2fs",
+                    attempt + 1,
+                    cfg.max_retries + 1,
+                    exc,
+                    delay,
+                )
                 await asyncio.sleep(delay)
 
         # Should be unreachable.

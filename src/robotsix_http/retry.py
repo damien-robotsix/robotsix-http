@@ -10,11 +10,14 @@ import asyncio
 import dataclasses
 import inspect
 import json
+import logging
 import random
 from collections.abc import Callable, Coroutine
 from typing import Any
 
 import httpx
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Exception introspection helpers
@@ -189,14 +192,23 @@ async def _retry_loop[T](
             if attempt == config.max_retries:
                 if config.on_retry_exhausted is not None:
                     config.on_retry_exhausted(attempt + 1, exc)
+                logger.debug("retries exhausted after %d attempt(s): %s", attempt + 1, exc)
                 raise
             if not is_transient_fn(exc):
                 if config.on_retry_exhausted is not None:
                     config.on_retry_exhausted(attempt + 1, exc)
+                logger.debug("retries exhausted after %d attempt(s): %s", attempt + 1, exc)
                 raise
             delay = _compute_backoff(attempt, config)
             if config.on_retry is not None:
                 config.on_retry(attempt + 1, exc, delay)
+            logger.debug(
+                "retry attempt %d/%d failed (%s); next in %.2fs",
+                attempt + 1,
+                config.max_retries + 1,
+                exc,
+                delay,
+            )
             await sleep_fn(delay)
 
     # Should be unreachable — satisfy the type checker.
