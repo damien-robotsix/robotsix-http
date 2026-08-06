@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.0.0 (unreleased)
 
+- Internal debug logging: `robotsix_http.retry` and `robotsix_http.client` now emit DEBUG records on retry and exhaustion, using lazy %-formatting. The package logger registers a `NullHandler` so no output is emitted unless the caller configures logging.
 - Added `.robotsix-mill/config.yaml` with `languages: [python]` to declare the repo's language scope.
 - Enable pytest `filterwarnings = ["error"]` in pyproject.toml to turn warnings into hard test failures.
 - Format except clause per ruff formatter: remove unnecessary parentheses around ``except (ValueError, TypeError):`` → ``except ValueError, TypeError:`` (both forms are equivalent in Python 3.14+).

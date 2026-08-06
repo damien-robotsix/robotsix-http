@@ -1,5 +1,6 @@
 """robotsix-http — shared HTTP retry/backoff library for the robotsix ecosystem."""
 
+import logging
 from importlib.metadata import PackageNotFoundError, version
 
 from robotsix_http.client import (
@@ -16,6 +17,8 @@ from robotsix_http.retry import (
     call_with_retry,
     is_transient,
 )
+
+logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 __all__ = [
     "DEFAULT_CONFIG",
