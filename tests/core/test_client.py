@@ -547,6 +547,62 @@ class TestRetryClientMisc:
                 assert response.status_code == 200
                 assert response.json() == {"method": method_name.upper()}
 
+    async def test_on_retry_exhausted_fires_on_non_idempotent_rejection(self) -> None:
+        """on_retry_exhausted fires when a POST receives a 5xx and retries are not attempted."""
+        exhausted_calls: list[tuple[int, Exception]] = []
+
+        def on_exhausted(attempt: int, exc: Exception) -> None:
+            exhausted_calls.append((attempt, exc))
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return _make_503_response(request)
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(transport=transport) as client:
+            rc = RetryClient(
+                client,
+                config=RetryConfig(
+                    max_retries=3,
+                    jitter_factor=0.0,
+                    on_retry_exhausted=on_exhausted,
+                ),
+            )
+            with pytest.raises(ExternalServiceError):
+                await rc.post("http://example.com")
+        assert len(exhausted_calls) == 1
+        assert exhausted_calls[0][0] == 1  # first attempt, 1-indexed, no retries
+        assert isinstance(exhausted_calls[0][1], httpx.HTTPStatusError)
+
+    async def test_on_retry_exhausted_not_fired_when_retry_succeeds(self) -> None:
+        """on_retry_exhausted is NOT invoked when a transient error recovers before exhaustion."""
+        exhausted_calls: list[tuple[int, Exception]] = []
+
+        def on_exhausted(attempt: int, exc: Exception) -> None:
+            exhausted_calls.append((attempt, exc))
+
+        call_count = 0
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return _make_503_response(request)
+            return httpx.Response(200, request=request)
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(transport=transport) as client:
+            rc = RetryClient(
+                client,
+                config=RetryConfig(
+                    max_retries=3,
+                    jitter_factor=0.0,
+                    on_retry_exhausted=on_exhausted,
+                ),
+            )
+            response = await rc.get("http://example.com")
+            assert response.status_code == 200
+        assert len(exhausted_calls) == 0  # callback never invoked
+
 
 # ---------------------------------------------------------------------------
 # Exception hierarchy
