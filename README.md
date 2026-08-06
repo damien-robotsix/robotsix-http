@@ -114,3 +114,21 @@ def my_transient_check(exc):
 
 result = call_with_retry(my_function, is_transient_fn=my_transient_check)
 ```
+
+## Logging
+
+`robotsix_http` emits DEBUG records on the package loggers
+(`robotsix_http.client` and `robotsix_http.retry`) as it schedules and
+exhausts retries — no configuration needed. By default nothing is printed
+(the package registers a `NullHandler`), so to observe retry/backoff behaviour
+just enable logging at DEBUG for the package:
+
+```python
+import logging
+logging.getLogger("robotsix_http").setLevel(logging.DEBUG)
+```
+
+On failure/backoff the logged message reads like
+`retry attempt 2/5 failed (...); next in 1.80s`, and retry exhaustion logs
+`retries exhausted after N attempt(s): ...`. This complements (does not
+replace) the programmatic `on_retry` / `on_retry_exhausted` callbacks.
