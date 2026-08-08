@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- towncrier release notes start -->
 
+## [0.3.0](https://github.com/damien-robotsix/robotsix-http/compare/v0.2.0...v0.3.0) (2026-08-08)
+
+
+### Features
+
+* **release:** static version and release-please, drop hatch-vcs ([#69](https://github.com/damien-robotsix/robotsix-http/issues/69)) ([8d0aa1a](https://github.com/damien-robotsix/robotsix-http/commit/8d0aa1a4a78c5fe4366e23888547e9d95272f006))
+
+
+### Bug Fixes
+
+* **release:** mint an App token so release PRs get CI ([#71](https://github.com/damien-robotsix/robotsix-http/issues/71)) ([2d6abf8](https://github.com/damien-robotsix/robotsix-http/commit/2d6abf8fc82efd0366e3c9e09674e4f54560ff6e))
+* **release:** restore the App token and sync uv.lock ([#74](https://github.com/damien-robotsix/robotsix-http/issues/74)) ([8f4e482](https://github.com/damien-robotsix/robotsix-http/commit/8f4e482b4344bffbbe08247b60dcdbfc29e75226))
+* **retry:** restore wrapped-JSONDecodeError and APITimeoutError as transient ([#45](https://github.com/damien-robotsix/robotsix-http/issues/45)) ([ba90d55](https://github.com/damien-robotsix/robotsix-http/commit/ba90d55ea2bcbd02f605f392e837cea7b485d73d))
+
 ## 0.2.0 (2026-08-08)
 
 ### Features
