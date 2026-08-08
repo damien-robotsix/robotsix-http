@@ -1,1 +1,0 @@
-Added ``on_retry_exhausted`` callback to ``RetryConfig``, invoked before the final raise when retries are exhausted or a non-retryable error is encountered. Receives ``(attempt, exception)`` with the 1-indexed total attempt count.
