@@ -4,13 +4,15 @@ modules:
     paths:
       - .github/dependabot.yml
       - .github/workflows/ci.yml
-      - .github/workflows/release.yml
+      - .github/workflows/release-please.yml
       - .gitignore
       - .pre-commit-config.yaml
       - .robotsix-mill/config.yaml
       - .robotsix-mill/periodic/**
       - AGENT.md
       - CHANGELOG.md
+      - release-please-config.json
+      - .release-please-manifest.json
       - LICENSE
       - README.md
       - SECURITY.md
@@ -19,7 +21,6 @@ modules:
       - src/robotsix_http/**
       - tests/core/**
       - uv.lock
-      - changelog.d/*.md
   - id: tests
     description: Test suite
     paths:

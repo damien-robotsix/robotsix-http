@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- towncrier release notes start -->
 
+## 0.2.0 (2026-08-08)
+
+### Features
+
+- Added ``on_retry_exhausted`` callback to ``RetryConfig``, invoked before the final raise when retries are exhausted or a non-retryable error is encountered. Receives ``(attempt, exception)`` with the 1-indexed total attempt count.
+
+### Miscellaneous
+
+- Add RetryClient-level test for on_retry_exhausted firing on the non-idempotent rejection branch (POST/PATCH + 5xx/429)
+- Fix truncated content in two unreleased changelog fragments (20260731)
+- Pin `httpx>=0.27,<1.0` and add `Typing :: Typed` classifier in robotsix-http pyproject.toml
+- Format except clause per ruff formatter: remove unnecessary parentheses around ``except (ValueError, TypeError):`` → ``except ValueError, TypeError:`` (both forms are equivalent in Python 3.14+).
+- Add .robotsix-mill/config.yaml to robotsix-http declaring languages: [python]
+- Enable pytest filterwarnings=["error"] in robotsix-http pyproject.toml
+- Add on_retry_exhausted give-up callback to RetryConfig (close the retry-observability gap)
+- Add internal DEBUG logging to robotsix_http retry/client (getLogger(__name__) + NullHandler)
+- robotsix-http: Enable mypy_baseline periodic workflow
+- Classify .robotsix-mill/config.yaml: assign to existing module or propose a new one
+- Add regression test for Python 2-style `except` import fix in client.py
+- AGENT.md: Changelog / release — User-visible changes go in `changelog.d/` towncrier fragments (`.feature.md` / `.bugfix.md` / `.misc.md` / `.breaking.md`). Never edit CHANGELOG.md directly.
+- Make test_import_clean actually detect import failures
+- AGENT.md: Structure — New test files live per-module under `tests/<module-id>/` mirroring the `modules` taxonomy in `docs/modules.yaml`.
+
+
 ## 0.1.0 (2026-07-31)
 
 ### Features
