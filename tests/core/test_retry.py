@@ -484,7 +484,7 @@ class TestCallWithRetrySync:
         # the 5 s deadline so the sleep is never reached.
         with (
             mock.patch(
-                "time.monotonic",
+                "robotsix_http.retry._now",
                 side_effect=itertools.chain([0.0], itertools.repeat(10.0)),
             ),
             pytest.raises(httpx.TimeoutException, match="always times out"),
@@ -517,7 +517,7 @@ class TestCallWithRetrySync:
         # The computed backoff for attempt 0 is 1.0 (with jitter_factor=0),
         # which is less than 4.5 → delay should be 1.0 (uncapped).
         time_side_effect = itertools.chain([0.0, 0.5], itertools.repeat(5.0))
-        with mock.patch("time.monotonic", side_effect=time_side_effect):
+        with mock.patch("robotsix_http.retry._now", side_effect=time_side_effect):
             result = call_with_retry(
                 fn,
                 config=RetryConfig(jitter_factor=0.0, stop_after_delay=5.0, on_retry=on_retry),
@@ -548,7 +548,7 @@ class TestCallWithRetrySync:
         # First attempt finishes at t=4.9, deadline is 5 s → remaining = 0.1.
         # The computed backoff for attempt 0 is 1.0 → capped to 0.1.
         time_side_effect = itertools.chain([0.0, 4.9], itertools.repeat(5.0))
-        with mock.patch("time.monotonic", side_effect=time_side_effect):
+        with mock.patch("robotsix_http.retry._now", side_effect=time_side_effect):
             result = call_with_retry(
                 fn,
                 config=RetryConfig(jitter_factor=0.0, stop_after_delay=5.0, on_retry=on_retry),
@@ -592,7 +592,7 @@ class TestCallWithRetrySync:
 
         with (
             mock.patch(
-                "time.monotonic",
+                "robotsix_http.retry._now",
                 side_effect=itertools.chain([0.0], itertools.repeat(10.0)),
             ),
             pytest.raises(httpx.TimeoutException, match="timeout"),
@@ -781,7 +781,7 @@ class TestACallWithRetry:
             raise httpx.TimeoutException("always times out")
 
         with (
-            mock.patch("time.monotonic", side_effect=[0.0, 10.0]),
+            mock.patch("robotsix_http.retry._now", side_effect=[0.0, 10.0]),
             pytest.raises(httpx.TimeoutException, match="always times out"),
         ):
             await acall_with_retry(
@@ -822,7 +822,7 @@ class TestACallWithRetry:
             raise httpx.TimeoutException("timeout")
 
         with (
-            mock.patch("time.monotonic", side_effect=[0.0, 10.0]),
+            mock.patch("robotsix_http.retry._now", side_effect=[0.0, 10.0]),
             pytest.raises(httpx.TimeoutException, match="timeout"),
         ):
             await acall_with_retry(

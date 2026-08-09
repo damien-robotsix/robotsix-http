@@ -20,6 +20,20 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
+
+def _now() -> float:
+    """Monotonic clock reading for the wall-clock deadline.
+
+    A seam so tests can control elapsed time. Tests must patch *this*
+    rather than ``time.monotonic`` globally: the sync entry points run
+    the retry loop through ``asyncio.run``, and asyncio's event loop
+    reads ``time.monotonic()`` for its own timer bookkeeping. Freezing
+    it there makes the loop's clock stand still, so any ``asyncio.sleep``
+    the retry performs never completes and the test hangs forever.
+    """
+    return time.monotonic()
+
+
 # ---------------------------------------------------------------------------
 # Exception introspection helpers
 # ---------------------------------------------------------------------------
@@ -193,7 +207,7 @@ async def _retry_loop[T](
         error is non-transient.
     """
     last_exc: Exception | None = None
-    start = time.monotonic()
+    start = _now()
     for attempt in range(config.max_retries + 1):
         try:
             return await invoke(fn)
@@ -212,7 +226,7 @@ async def _retry_loop[T](
             delay = _compute_backoff(attempt, config)
             # Wall-clock deadline: abort before sleeping past it.
             if config.stop_after_delay is not None:
-                elapsed = time.monotonic() - start
+                elapsed = _now() - start
                 if elapsed >= config.stop_after_delay:
                     if config.on_retry_exhausted is not None:
                         config.on_retry_exhausted(attempt + 1, exc)

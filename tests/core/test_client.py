@@ -551,7 +551,7 @@ class TestRetryClientMisc:
                 config=RetryConfig(max_retries=4, jitter_factor=0.0, stop_after_delay=5.0),
             )
             with (
-                mock.patch("time.monotonic", side_effect=[0.0, 10.0]),
+                mock.patch("robotsix_http.retry._now", side_effect=[0.0, 10.0]),
                 pytest.raises(ExternalServiceError),
             ):
                 await rc.get("http://example.com")
@@ -599,7 +599,7 @@ class TestRetryClientMisc:
                 ),
             )
             with (
-                mock.patch("time.monotonic", side_effect=[0.0, 10.0]),
+                mock.patch("robotsix_http.retry._now", side_effect=[0.0, 10.0]),
                 pytest.raises(ExternalServiceError),
             ):
                 await rc.get("http://example.com")
@@ -638,7 +638,7 @@ class TestRetryClientMisc:
             # First attempt finishes at t=0.2, remaining = 4.8.
             # Retry-After is 30, but capped to 4.8.
             with (
-                mock.patch("time.monotonic", side_effect=[0.0, 0.2]),
+                mock.patch("robotsix_http.retry._now", side_effect=[0.0, 0.2]),
                 mock.patch("asyncio.sleep", new_callable=mock.AsyncMock),
             ):
                 response = await rc.get("http://example.com")

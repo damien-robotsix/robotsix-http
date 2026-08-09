@@ -10,11 +10,11 @@ import datetime
 import email.utils
 import logging
 import re
-import time
 from typing import Any
 
 import httpx
 
+from robotsix_http import retry as _retry
 from robotsix_http.retry import (
     RetryConfig,
     _compute_backoff,
@@ -245,7 +245,7 @@ class RetryClient:
         cfg = config if config is not None else self._config
 
         last_exc: Exception | None = None
-        start = time.monotonic()
+        start = _retry._now()
         for attempt in range(cfg.max_retries + 1):
             try:
                 response = await self._client.request(method, url, **kwargs)
@@ -267,7 +267,7 @@ class RetryClient:
                 delay = self._compute_delay(attempt, exc, cfg)
                 # Wall-clock deadline: abort before sleeping past it.
                 if cfg.stop_after_delay is not None:
-                    elapsed = time.monotonic() - start
+                    elapsed = _retry._now() - start
                     if elapsed >= cfg.stop_after_delay:
                         if cfg.on_retry_exhausted is not None:
                             cfg.on_retry_exhausted(attempt + 1, exc)
