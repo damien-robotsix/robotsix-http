@@ -21,6 +21,7 @@ Then install with `uv sync` or `uv add` as usual.
 import httpx
 from robotsix_http import RetryClient, RetryConfig, ExternalHTTPError
 
+
 async def main():
     # RetryClient wraps an existing httpx.AsyncClient — you own its lifecycle
     async with httpx.AsyncClient() as client:
@@ -31,6 +32,7 @@ async def main():
             print(resp.json())
         except ExternalHTTPError as exc:
             print(f"HTTP {exc.status_code}: {exc}")
+
 
 # asyncio.run(main())
 ```
@@ -109,8 +111,10 @@ result = await acall_with_retry(my_async_function)
 # Custom transient predicate
 from robotsix_http import is_transient
 
+
 def my_transient_check(exc):
     return isinstance(exc, MyRetryableError) or is_transient(exc)
+
 
 result = call_with_retry(my_function, is_transient_fn=my_transient_check)
 ```
@@ -125,6 +129,7 @@ just enable logging at DEBUG for the package:
 
 ```python
 import logging
+
 logging.getLogger("robotsix_http").setLevel(logging.DEBUG)
 ```
 
