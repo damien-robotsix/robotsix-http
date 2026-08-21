@@ -23,11 +23,18 @@ uv run mypy src/ --strict
 
 ## Changelog / release
 
-- User-visible changes go in `changelog.d/` towncrier fragments
-  (`.feature.md` / `.bugfix.md` / `.misc.md` / `.breaking.md`).
-- Never edit the `### Fixed`/`### Added` release sections of
-  `CHANGELOG.md` directly — towncrier owns the rendered changelog
-  and regenerates it on release.
+- The project uses [release-please](https://github.com/googleapis/release-please) with a
+  **static version** in `pyproject.toml`.  Do not bump the version by hand — release-please
+  bumps it automatically on release PRs.
+- Changelog entries are generated from **conventional commit messages**:
+  `feat:` triggers a minor bump, `fix:` triggers a patch bump, and `feat!:` or a `BREAKING CHANGE`
+  footer triggers a major bump.  `chore:`, `docs:`, `style:`, `refactor:`, `perf:`, `test:`, and
+  `ci:` are ignored for versioning but still appear in the changelog.
+- Write descriptive commit messages — the first line of each merged commit becomes the
+  changelog bullet for that release.
+- Do **not** create `changelog.d/` towncrier fragments (`.feature.md` / `.bugfix.md` /
+  `.misc.md` / `.breaking.md`).  The repo migrated from towncrier to release-please and
+  those fragments are silently ignored.
 
 ## CI
 
