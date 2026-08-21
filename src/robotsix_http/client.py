@@ -94,14 +94,43 @@ def _parse_retry_after(header: str) -> float | None:
 # so they can be safely retried on *any* transient error (including 5xx).
 _SAFE_METHODS: frozenset[str] = frozenset({"GET", "DELETE", "PUT", "HEAD", "OPTIONS"})
 
+# Failures that happen before the request bytes can reach the server, so a
+# retry cannot duplicate a side effect.  A connect failure means no
+# connection was established; a pool timeout means we never got one to
+# write to.  Everything else — read timeouts above all — leaves the
+# request possibly delivered and possibly already acted on.
+_PRE_DELIVERY_ERRORS: tuple[type[Exception], ...] = (
+    httpx.ConnectError,
+    httpx.ConnectTimeout,
+    httpx.PoolTimeout,
+)
+
+
+def _is_pre_delivery(exc: BaseException, max_depth: int = 10) -> bool:
+    """Whether *exc* (or any cause) proves the request never left the client.
+
+    Walks the ``__cause__`` chain the same way :func:`is_transient` does,
+    because transport failures routinely surface wrapped by higher layers.
+    """
+    current: BaseException | None = exc
+    for _ in range(max_depth):
+        if current is None:
+            return False
+        if isinstance(current, _PRE_DELIVERY_ERRORS):
+            return True
+        current = current.__cause__
+    return False
+
 
 def _is_retryable_for_method(method: str, exc: Exception) -> bool:
     """Determine whether *exc* warrants a retry given the HTTP *method*.
 
     Per the idempotency gate:
-    * **POST / PATCH** — never retried on HTTP response errors (the
-      server may have already acted on the request); only network /
-      transport-level errors are retried.
+    * **POST / PATCH** — retried only when the failure proves the request
+      never reached the server (connect / pool errors).  A response error
+      means the server already acted; a read or write timeout means it
+      *may* have, and retrying then duplicates the side effect — that is
+      how one ``POST /tickets/ingest`` call became three tickets.
     * **GET / DELETE / PUT / HEAD / OPTIONS** — retried freely (all
       transient errors including 429 and 5xx).
     """
@@ -111,7 +140,7 @@ def _is_retryable_for_method(method: str, exc: Exception) -> bool:
     # the request — do not retry regardless of status code.
     if isinstance(exc, httpx.HTTPStatusError):
         return False
-    return is_transient(exc)
+    return _is_pre_delivery(exc) and is_transient(exc)
 
 
 # ---------------------------------------------------------------------------

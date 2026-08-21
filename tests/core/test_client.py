@@ -112,13 +112,43 @@ class TestIsRetryableForMethod:
         exc = httpx.HTTPStatusError("boom", request=request, response=response)
         assert _is_retryable_for_method("POST", exc) is False
 
-    def test_post_retries_on_transport_error(self) -> None:
-        exc = httpx.TransportError("connection reset")
+    def test_post_retries_on_connect_error(self) -> None:
+        exc = httpx.ConnectError("connection refused")
         assert _is_retryable_for_method("POST", exc) is True
 
-    def test_post_retries_on_timeout(self) -> None:
-        exc = httpx.TimeoutException("timeout")
+    def test_post_retries_on_connect_timeout(self) -> None:
+        exc = httpx.ConnectTimeout("connect timed out")
         assert _is_retryable_for_method("POST", exc) is True
+
+    def test_post_retries_on_pool_timeout(self) -> None:
+        exc = httpx.PoolTimeout("no free connection")
+        assert _is_retryable_for_method("POST", exc) is True
+
+    def test_post_does_not_retry_on_read_timeout(self) -> None:
+        # The request was sent; the server may have already acted on it.
+        exc = httpx.ReadTimeout("read timed out")
+        assert _is_retryable_for_method("POST", exc) is False
+
+    def test_post_does_not_retry_on_write_timeout(self) -> None:
+        exc = httpx.WriteTimeout("write timed out")
+        assert _is_retryable_for_method("POST", exc) is False
+
+    def test_post_does_not_retry_on_bare_transport_error(self) -> None:
+        exc = httpx.TransportError("connection reset")
+        assert _is_retryable_for_method("POST", exc) is False
+
+    def test_post_retries_on_wrapped_connect_error(self) -> None:
+        exc = RuntimeError("component_request failed")
+        exc.__cause__ = httpx.ConnectError("connection refused")
+        assert _is_retryable_for_method("POST", exc) is True
+
+    def test_patch_does_not_retry_on_read_timeout(self) -> None:
+        exc = httpx.ReadTimeout("read timed out")
+        assert _is_retryable_for_method("PATCH", exc) is False
+
+    def test_get_still_retries_on_read_timeout(self) -> None:
+        exc = httpx.ReadTimeout("read timed out")
+        assert _is_retryable_for_method("GET", exc) is True
 
     def test_patch_does_not_retry_on_503(self) -> None:
         request = httpx.Request("PATCH", "http://example.com")
@@ -362,15 +392,15 @@ class TestMethodIdempotencyGate:
                 await rc.post("http://example.com")
             assert call_count == 1
 
-    async def test_post_retries_on_transport_error(self) -> None:
-        """POST on a transport error SHOULD retry."""
+    async def test_post_retries_on_connect_error(self) -> None:
+        """POST SHOULD retry when the connection was never established."""
         call_count = 0
 
         def handler(request: httpx.Request) -> httpx.Response:
             nonlocal call_count
             call_count += 1
             if call_count < 3:
-                raise httpx.TransportError("connection reset")
+                raise httpx.ConnectError("connection refused")
             return httpx.Response(200, request=request)
 
         transport = httpx.MockTransport(handler)
@@ -379,6 +409,27 @@ class TestMethodIdempotencyGate:
             response = await rc.post("http://example.com")
             assert response.status_code == 200
             assert call_count == 3
+
+    async def test_post_sent_once_on_read_timeout(self) -> None:
+        """POST must NOT retry a read timeout — the server may have acted.
+
+        Regression guard for the duplicate-ticket incident: one
+        ``POST /tickets/ingest`` that read-timed-out was retried twice and
+        filed three tickets.
+        """
+        call_count = 0
+
+        def handler(request: httpx.Request) -> httpx.Response:  # noqa: ARG001
+            nonlocal call_count
+            call_count += 1
+            raise httpx.ReadTimeout("read timed out")
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(transport=transport) as client:
+            rc = RetryClient(client, config=RetryConfig(max_retries=3, jitter_factor=0.0))
+            with pytest.raises(httpx.ReadTimeout):
+                await rc.post("http://example.com")
+            assert call_count == 1
 
     async def test_get_retries_on_429_response(self) -> None:
         """GET on a 429 response SHOULD retry."""
