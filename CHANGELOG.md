@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- towncrier release notes start -->
 
+## [0.3.2](https://github.com/damien-robotsix/robotsix-http/compare/v0.3.1...v0.3.2) (2026-08-23)
+
+
+### Bug Fixes
+
+* **retry:** stop retrying POST/PATCH after the request may have been delivered ([#85](https://github.com/damien-robotsix/robotsix-http/issues/85)) ([13e6e9a](https://github.com/damien-robotsix/robotsix-http/commit/13e6e9ab330f9be3b8b1e7bc2694210f7d9e5848))
+
 ## [0.3.1](https://github.com/damien-robotsix/robotsix-http/compare/v0.3.0...v0.3.1) (2026-08-09)
 
 
