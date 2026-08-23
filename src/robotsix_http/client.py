@@ -17,7 +17,7 @@ import httpx
 from robotsix_http import retry as _retry
 from robotsix_http.retry import (
     RetryConfig,
-    _compute_backoff,
+    compute_backoff,
     is_transient,
 )
 
@@ -333,4 +333,4 @@ class RetryClient:
         retry_after = _extract_retry_after(exc)
         if retry_after is not None:
             return min(retry_after, config.backoff_cap)
-        return _compute_backoff(attempt, config)
+        return compute_backoff(attempt, config)

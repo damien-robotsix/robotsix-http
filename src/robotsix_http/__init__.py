@@ -15,6 +15,7 @@ from robotsix_http.retry import (
     RetryConfig,
     acall_with_retry,
     call_with_retry,
+    compute_backoff,
     is_transient,
 )
 
@@ -30,6 +31,7 @@ __all__ = [
     "RetryConfig",
     "acall_with_retry",
     "call_with_retry",
+    "compute_backoff",
     "is_transient",
 ]
 

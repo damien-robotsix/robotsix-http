@@ -160,7 +160,7 @@ class RetryConfig:
 # ---------------------------------------------------------------------------
 
 
-def _compute_backoff(attempt: int, config: RetryConfig) -> float:
+def compute_backoff(attempt: int, config: RetryConfig) -> float:
     """Compute the exponential-backoff delay for *attempt* (0-indexed).
 
     The raw delay is ``min(backoff_base ** attempt, backoff_cap)``.
@@ -223,7 +223,7 @@ async def _retry_loop[T](
                     config.on_retry_exhausted(attempt + 1, exc)
                 logger.debug("retries exhausted after %d attempt(s): %s", attempt + 1, exc)
                 raise
-            delay = _compute_backoff(attempt, config)
+            delay = compute_backoff(attempt, config)
             # Wall-clock deadline: abort before sleeping past it.
             if config.stop_after_delay is not None:
                 elapsed = _now() - start
