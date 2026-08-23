@@ -11,11 +11,11 @@ import pytest
 
 from robotsix_http.retry import (
     RetryConfig,
-    _compute_backoff,
     _status,
     _walk_cause_chain,
     acall_with_retry,
     call_with_retry,
+    compute_backoff,
     is_transient,
 )
 
@@ -251,7 +251,7 @@ class TestRetryConfig:
 
 
 # ---------------------------------------------------------------------------
-# _compute_backoff
+# compute_backoff
 # ---------------------------------------------------------------------------
 
 
@@ -259,51 +259,51 @@ class TestComputeBackoff:
     def test_attempt_0(self) -> None:
         cfg = RetryConfig(backoff_base=2.0, backoff_cap=30.0)
         with mock.patch("random.random", return_value=0.0):
-            delay = _compute_backoff(0, cfg)
+            delay = compute_backoff(0, cfg)
             assert delay == 1.0
 
     def test_attempt_1(self) -> None:
         cfg = RetryConfig(backoff_base=2.0, backoff_cap=30.0)
         with mock.patch("random.random", return_value=0.0):
-            delay = _compute_backoff(1, cfg)
+            delay = compute_backoff(1, cfg)
             assert delay == 2.0
 
     def test_attempt_3(self) -> None:
         cfg = RetryConfig(backoff_base=2.0, backoff_cap=30.0)
         with mock.patch("random.random", return_value=0.0):
-            delay = _compute_backoff(3, cfg)
+            delay = compute_backoff(3, cfg)
             assert delay == 8.0
 
     def test_cap(self) -> None:
         cfg = RetryConfig(backoff_base=2.0, backoff_cap=30.0)
         with mock.patch("random.random", return_value=0.0):
-            delay = _compute_backoff(10, cfg)
+            delay = compute_backoff(10, cfg)
             assert delay == 30.0
 
     def test_jitter_max(self) -> None:
         """With random.random() == 1.0, jitter is at maximum — delay is halved."""
         cfg = RetryConfig(backoff_base=2.0, backoff_cap=30.0, jitter_factor=0.5)
         with mock.patch("random.random", return_value=1.0):
-            delay = _compute_backoff(0, cfg)
+            delay = compute_backoff(0, cfg)
             assert delay == pytest.approx(0.5)
 
     def test_jitter_mid(self) -> None:
         cfg = RetryConfig(backoff_base=2.0, backoff_cap=30.0, jitter_factor=0.5)
         with mock.patch("random.random", return_value=0.5):
-            delay = _compute_backoff(0, cfg)
+            delay = compute_backoff(0, cfg)
             assert delay == pytest.approx(0.75)
 
     def test_jitter_bounds(self) -> None:
         """Without mocking, delay should be within expected bounds."""
         cfg = RetryConfig(backoff_base=2.0, backoff_cap=30.0, jitter_factor=0.5)
         for _ in range(20):
-            delay = _compute_backoff(0, cfg)
+            delay = compute_backoff(0, cfg)
             assert 0.5 <= delay <= 1.0
 
     def test_zero_jitter(self) -> None:
         cfg = RetryConfig(backoff_base=2.0, backoff_cap=30.0, jitter_factor=0.0)
         with mock.patch("random.random", return_value=0.5):
-            delay = _compute_backoff(0, cfg)
+            delay = compute_backoff(0, cfg)
             assert delay == 1.0
 
 
