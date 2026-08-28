@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import itertools
 import json
+import threading
 from unittest import mock
 
 import httpx
@@ -610,6 +611,61 @@ class TestCallWithRetrySync:
         assert len(exhausted_calls) == 1
         assert exhausted_calls[0][0] == 1  # attempt is 1-indexed
         assert isinstance(exhausted_calls[0][1], httpx.TimeoutException)
+
+
+# ---------------------------------------------------------------------------
+# call_with_retry (sync) from inside a running event loop
+# ---------------------------------------------------------------------------
+
+
+class TestCallWithRetryInsideRunningLoop:
+    """``call_with_retry`` must work when async code calls a sync callable.
+
+    ``asyncio.run`` refuses to nest, so the retry loop is driven on a
+    worker thread instead of raising ``RuntimeError``.
+    """
+
+    async def test_success_first_try(self) -> None:
+        def fn() -> str:
+            return "ok"
+
+        assert call_with_retry(fn) == "ok"
+
+    async def test_runs_on_a_worker_thread(self) -> None:
+        caller_thread = threading.get_ident()
+        seen: list[int] = []
+
+        def fn() -> str:
+            seen.append(threading.get_ident())
+            return "ok"
+
+        assert call_with_retry(fn) == "ok"
+        assert seen and seen[0] != caller_thread
+
+    async def test_retry_then_success(self) -> None:
+        call_count = 0
+
+        def fn() -> str:
+            nonlocal call_count
+            call_count += 1
+            if call_count < 3:
+                raise httpx.HTTPStatusError(
+                    "boom",
+                    request=httpx.Request("GET", "http://x"),
+                    response=httpx.Response(503, request=httpx.Request("GET", "http://x")),
+                )
+            return "ok"
+
+        result = call_with_retry(fn, config=RetryConfig(jitter_factor=0.0))
+        assert result == "ok"
+        assert call_count == 3
+
+    async def test_exception_propagates_to_the_async_caller(self) -> None:
+        def fn() -> str:
+            raise ValueError("not transient")
+
+        with pytest.raises(ValueError, match="not transient"):
+            call_with_retry(fn)
 
 
 # ---------------------------------------------------------------------------

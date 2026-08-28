@@ -14,6 +14,7 @@ import logging
 import random
 import time
 from collections.abc import Callable, Coroutine
+from concurrent import futures
 from typing import Any
 
 import httpx
@@ -256,8 +257,33 @@ async def _retry_loop[T](
 
 
 def _drive_sync[T](coro: Coroutine[Any, Any, T]) -> T:
-    """Drive an async coroutine to completion in a synchronous context."""
-    return asyncio.run(coro)
+    """Drive an async coroutine to completion in a synchronous context.
+
+    With no event loop running on this thread, ``asyncio.run`` drives the
+    coroutine directly.
+
+    When a loop *is* already running here, ``asyncio.run`` raises
+    ``RuntimeError: asyncio.run() cannot be called from a running event
+    loop``.  That happens whenever a synchronous callable reaches
+    :func:`call_with_retry` from async code — an agent tool handler, a
+    sync token-minting helper invoked inside an async request path — and
+    the caller has no way to await instead.  Rather than fail, hand the
+    coroutine to a short-lived worker thread that owns its own loop and
+    block until it finishes.
+
+    Blocking the calling loop is the deliberate trade-off: the caller is
+    synchronous and already expects to block.  Async callers that must
+    not stall their loop should use :func:`acall_with_retry`.
+    """
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+
+    with futures.ThreadPoolExecutor(
+        max_workers=1, thread_name_prefix="robotsix-http-retry"
+    ) as pool:
+        return pool.submit(asyncio.run, coro).result()
 
 
 def _resolve_config(
