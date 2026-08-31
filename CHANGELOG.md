@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- towncrier release notes start -->
 
+## [0.3.3](https://github.com/damien-robotsix/robotsix-http/compare/v0.3.2...v0.3.3) (2026-08-30)
+
+
+### Bug Fixes
+
+* **retry:** drive the sync retry loop on a worker thread inside a running loop ([#96](https://github.com/damien-robotsix/robotsix-http/issues/96)) ([cdfd4d1](https://github.com/damien-robotsix/robotsix-http/commit/cdfd4d1c42679fef73081439562872792e202dc4))
+
 ## [0.3.2](https://github.com/damien-robotsix/robotsix-http/compare/v0.3.1...v0.3.2) (2026-08-23)
 
 
