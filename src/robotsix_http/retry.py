@@ -173,13 +173,9 @@ class RetryConfig:
         if self.backoff_cap <= 0:
             raise ValueError(f"backoff_cap must be > 0, got {self.backoff_cap}")
         if not 0 <= self.jitter_factor <= 1.0:
-            raise ValueError(
-                f"jitter_factor must be in [0, 1.0], got {self.jitter_factor}"
-            )
+            raise ValueError(f"jitter_factor must be in [0, 1.0], got {self.jitter_factor}")
         if self.stop_after_delay is not None and self.stop_after_delay <= 0:
-            raise ValueError(
-                f"stop_after_delay must be > 0, got {self.stop_after_delay}"
-            )
+            raise ValueError(f"stop_after_delay must be > 0, got {self.stop_after_delay}")
 
 
 # ---------------------------------------------------------------------------

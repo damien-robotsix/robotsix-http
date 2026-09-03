@@ -276,15 +276,11 @@ class TestRetryConfigValidation:
             RetryConfig(backoff_cap=-5.0)
 
     def test_jitter_factor_above_one_raises(self) -> None:
-        with pytest.raises(
-            ValueError, match=r"jitter_factor must be in \[0, 1.0\], got 1.5"
-        ):
+        with pytest.raises(ValueError, match=r"jitter_factor must be in \[0, 1.0\], got 1.5"):
             RetryConfig(jitter_factor=1.5)
 
     def test_negative_jitter_factor_raises(self) -> None:
-        with pytest.raises(
-            ValueError, match=r"jitter_factor must be in \[0, 1.0\], got -0.1"
-        ):
+        with pytest.raises(ValueError, match=r"jitter_factor must be in \[0, 1.0\], got -0.1"):
             RetryConfig(jitter_factor=-0.1)
 
     def test_jitter_factor_bounds_allowed(self) -> None:
