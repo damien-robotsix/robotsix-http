@@ -125,18 +125,22 @@ class RetryConfig:
 
     Attributes:
         max_retries: Maximum number of retry attempts (default 4).
+            Must be ``>= 0``.
         backoff_base: Base for exponential backoff (default 2.0).
+            Must be ``> 0``.
         backoff_cap: Maximum backoff delay in seconds (default 30.0).
+            Must be ``> 0``.
         jitter_factor: Fraction of the computed delay to subtract as
             random jitter.  A factor of 0.5 means the actual delay
-            ranges from 50% to 100% of the computed value.
+            ranges from 50% to 100% of the computed value.  Must be in
+            ``[0, 1.0]`` so the computed delay never goes negative.
         stop_after_delay: Optional wall-clock deadline in seconds.
             If set, the total elapsed time (including all attempts and
             sleeps) is bounded by this value.  After a failure,
             ``on_retry_exhausted`` fires and the last exception is
             re-raised when the deadline is exceeded rather than
             sleeping past it.  ``None`` preserves the existing
-            unbounded behaviour.
+            unbounded behaviour.  When set, must be ``> 0``.
         on_retry: Optional callback invoked on each retry with
             ``(attempt: int, exception: Exception, delay: float)``.
             *attempt* is 1-indexed.
@@ -154,6 +158,24 @@ class RetryConfig:
     stop_after_delay: float | None = None
     on_retry: Callable[[int, Exception, float], None] | None = None
     on_retry_exhausted: Callable[[int, Exception], None] | None = None
+
+    def __post_init__(self) -> None:
+        """Validate parameters, raising ``ValueError`` on misconfiguration.
+
+        Catches invalid values at construction time rather than letting
+        them surface as runtime errors (e.g. a negative delay passed to
+        ``asyncio.sleep``).
+        """
+        if self.max_retries < 0:
+            raise ValueError(f"max_retries must be >= 0, got {self.max_retries}")
+        if self.backoff_base <= 0:
+            raise ValueError(f"backoff_base must be > 0, got {self.backoff_base}")
+        if self.backoff_cap <= 0:
+            raise ValueError(f"backoff_cap must be > 0, got {self.backoff_cap}")
+        if not 0 <= self.jitter_factor <= 1.0:
+            raise ValueError(f"jitter_factor must be in [0, 1.0], got {self.jitter_factor}")
+        if self.stop_after_delay is not None and self.stop_after_delay <= 0:
+            raise ValueError(f"stop_after_delay must be > 0, got {self.stop_after_delay}")
 
 
 # ---------------------------------------------------------------------------

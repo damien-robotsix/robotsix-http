@@ -56,6 +56,8 @@ rc = RetryClient(client, config=config)
 resp = await rc.get("https://api.example.com/data", config=config)
 ```
 
+`RetryConfig` validates all parameters at construction time, raising `ValueError` if any value is invalid (e.g., negative `max_retries`, zero `backoff_cap`, or `jitter_factor` outside [0, 1.0]). See the class docstring for constraint details.
+
 ## API overview
 
 | Symbol | Description |

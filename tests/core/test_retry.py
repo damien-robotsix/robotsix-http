@@ -251,6 +251,54 @@ class TestRetryConfig:
         assert cfg.on_retry_exhausted is _exhausted
 
 
+class TestRetryConfigValidation:
+    def test_negative_max_retries_raises(self) -> None:
+        with pytest.raises(ValueError, match=r"max_retries must be >= 0, got -1"):
+            RetryConfig(max_retries=-1)
+
+    def test_zero_max_retries_allowed(self) -> None:
+        assert RetryConfig(max_retries=0).max_retries == 0
+
+    def test_zero_backoff_base_raises(self) -> None:
+        with pytest.raises(ValueError, match=r"backoff_base must be > 0, got 0"):
+            RetryConfig(backoff_base=0.0)
+
+    def test_negative_backoff_base_raises(self) -> None:
+        with pytest.raises(ValueError, match=r"backoff_base must be > 0, got -1"):
+            RetryConfig(backoff_base=-1.0)
+
+    def test_zero_backoff_cap_raises(self) -> None:
+        with pytest.raises(ValueError, match=r"backoff_cap must be > 0, got 0"):
+            RetryConfig(backoff_cap=0.0)
+
+    def test_negative_backoff_cap_raises(self) -> None:
+        with pytest.raises(ValueError, match=r"backoff_cap must be > 0, got -5"):
+            RetryConfig(backoff_cap=-5.0)
+
+    def test_jitter_factor_above_one_raises(self) -> None:
+        with pytest.raises(ValueError, match=r"jitter_factor must be in \[0, 1.0\], got 1.5"):
+            RetryConfig(jitter_factor=1.5)
+
+    def test_negative_jitter_factor_raises(self) -> None:
+        with pytest.raises(ValueError, match=r"jitter_factor must be in \[0, 1.0\], got -0.1"):
+            RetryConfig(jitter_factor=-0.1)
+
+    def test_jitter_factor_bounds_allowed(self) -> None:
+        assert RetryConfig(jitter_factor=0.0).jitter_factor == 0.0
+        assert RetryConfig(jitter_factor=1.0).jitter_factor == 1.0
+
+    def test_zero_stop_after_delay_raises(self) -> None:
+        with pytest.raises(ValueError, match=r"stop_after_delay must be > 0, got 0"):
+            RetryConfig(stop_after_delay=0.0)
+
+    def test_negative_stop_after_delay_raises(self) -> None:
+        with pytest.raises(ValueError, match=r"stop_after_delay must be > 0, got -1"):
+            RetryConfig(stop_after_delay=-1.0)
+
+    def test_none_stop_after_delay_allowed(self) -> None:
+        assert RetryConfig(stop_after_delay=None).stop_after_delay is None
+
+
 # ---------------------------------------------------------------------------
 # compute_backoff
 # ---------------------------------------------------------------------------
