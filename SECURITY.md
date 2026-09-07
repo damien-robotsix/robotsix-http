@@ -1,11 +1,13 @@
 # Security Policy
 
-## Supported Versions
-
-Only the latest release is supported.
-
 ## Reporting a Vulnerability
+Please report security vulnerabilities privately by email to admin@robotsix.net.
+Do not open a public issue for security problems.
 
-Report vulnerabilities via
-[GitHub Private Vulnerability Reporting](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability).
-Do not open a public issue.
+## Response Time
+This project is maintained by a single person and cannot guarantee a response
+time. Reports are handled on a best-effort basis.
+
+## Coordinated Disclosure
+This project follows coordinated disclosure: please allow a reasonable window
+to release a fix before any public disclosure.
