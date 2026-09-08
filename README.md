@@ -185,6 +185,7 @@ Raise `DomainError` for expected, client-facing failures:
 ```python
 from robotsix_http.fastapi import DomainError
 
+
 @app.post("/items")
 async def create_item(data: ItemSchema):
     if not data.name:
