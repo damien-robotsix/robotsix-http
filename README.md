@@ -15,6 +15,15 @@ robotsix-http = { git = "https://github.com/damien-robotsix/robotsix-http.git" }
 
 Then install with `uv sync` or `uv add` as usual.
 
+### Optional FastAPI integration
+
+To use the FastAPI service-bootstrap helpers (error envelope, exception handlers, health route), install with the `fastapi` extra:
+
+```toml
+[project.dependencies]
+robotsix-http = { version = "*", extras = ["fastapi"] }
+```
+
 ## Quick start
 
 ```python
@@ -119,6 +128,76 @@ def my_transient_check(exc):
 
 
 result = call_with_retry(my_function, is_transient_fn=my_transient_check)
+```
+
+## FastAPI service bootstrap
+
+The optional `robotsix_http.fastapi` submodule provides a canonical error envelope, wired exception handlers, and a health-check route factory — eliminating boilerplate duplication across services.
+
+### Setup
+
+Wire all exception handlers onto your FastAPI app:
+
+```python
+from fastapi import FastAPI
+from robotsix_http.fastapi import register_exception_handlers, create_health_router
+
+app = FastAPI()
+
+# Register the standard exception handler suite
+register_exception_handlers(app)
+
+# Optional: add a health-check route
+app.include_router(create_health_router())
+```
+
+### Error envelope
+
+All errors render into a canonical JSON envelope:
+
+```json
+{
+  "error": {
+    "code": "upstream_auth_error",
+    "detail": "..."
+  }
+}
+```
+
+### Exception handlers
+
+The registered handlers cover:
+
+| Exception | HTTP Status | Error Code |
+|---|---|---|
+| `RequestValidationError` (invalid request body) | 422 | `validation_error` |
+| `HTTPException` (FastAPI/Starlette) | Via `.status_code` | `http_error` |
+| `DomainError` (application-level error) | Via `.status_code` (default 400) | Via `.code` (default `domain_error`) |
+| `ExternalAuthError` (upstream 401/403) | 502 | `upstream_auth_error` |
+| `ExternalRateLimitError` (upstream 429) | 429 | `upstream_rate_limited` |
+| `ExternalServiceError` (upstream 5xx) | 502 | `upstream_service_error` |
+| Unhandled `Exception` (catch-all) | 500 | `internal_error` |
+
+### Domain errors
+
+Raise `DomainError` for expected, client-facing failures:
+
+```python
+from robotsix_http.fastapi import DomainError
+
+@app.post("/items")
+async def create_item(data: ItemSchema):
+    if not data.name:
+        raise DomainError("Item name is required", code="missing_name")
+    # ...
+```
+
+### Health check
+
+The default health route responds to `GET /health` with `{"status": "ok"}`. Customize the path:
+
+```python
+app.include_router(create_health_router(path="/healthz"))
 ```
 
 ## Logging
