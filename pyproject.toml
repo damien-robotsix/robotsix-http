@@ -67,4 +67,4 @@ python_version = "3.14"
 [tool.deptry.per_rule_ignores]
 DEP001 = ["starlette"]
 DEP002 = ["httpx"]
-DEP003 = ["robotsix_http"]
+DEP003 = ["robotsix_http", "starlette"]
