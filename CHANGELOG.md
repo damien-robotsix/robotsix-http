@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- towncrier release notes start -->
 
+## [0.4.0](https://github.com/damien-robotsix/robotsix-http/compare/v0.3.3...v0.4.0) (2026-09-08)
+
+
+### Features
+
+* Extract shared FastAPI service-bootstrap (error-envelope + exception-handler suite + /health) (20260906T195609Z-extract-shared-fastapi-service-bootstrap-46b3) ([#108](https://github.com/damien-robotsix/robotsix-http/issues/108)) ([d23e64f](https://github.com/damien-robotsix/robotsix-http/commit/d23e64f6b887490fbfe1e39095a43a3225e8fddb))
+
 ## [0.3.3](https://github.com/damien-robotsix/robotsix-http/compare/v0.3.2...v0.3.3) (2026-08-30)
 
 
