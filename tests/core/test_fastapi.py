@@ -40,6 +40,35 @@ def _request() -> Request:
     return Request({"type": "http", "method": "GET", "path": "/", "headers": []})
 
 
+# ---------------------------------------------------------------------------
+# lazy package-level re-export
+# ---------------------------------------------------------------------------
+
+
+def test_fastapi_lazily_re_exported_from_package() -> None:
+    """``robotsix_http.fastapi`` is reachable via the lazy re-export.
+
+    The submodule is deliberately not imported eagerly at package top level
+    (``fastapi`` is an optional dependency), so it must be resolvable through
+    the package ``__getattr__`` instead — both as a direct attribute access and
+    via ``from robotsix_http import fastapi``.
+    """
+    import robotsix_http
+
+    assert "fastapi" in dir(robotsix_http)
+    assert robotsix_http.fastapi is __import__("robotsix_http.fastapi", fromlist=[""])
+    # Unknown attributes fall through to AttributeError (PEP 562).
+    assert not hasattr(robotsix_http, "no_such_attribute")
+
+
+def test_fastapi_lazy_from_import() -> None:
+    from robotsix_http import fastapi
+
+    assert callable(fastapi.DomainError)
+    assert callable(fastapi.create_health_router)
+    assert callable(fastapi.register_exception_handlers)
+
+
 def _body(response: JSONResponse) -> dict[str, Any]:
     return json.loads(bytes(response.body))
 
