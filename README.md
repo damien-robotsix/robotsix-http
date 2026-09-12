@@ -91,6 +91,121 @@ Exception
 All exceptions carry the original `status_code` and `httpx.Response` object for
 inspection.
 
+## URL/IP safety (SSRF protection)
+
+`robotsix_http` provides a security-hardened HTTP layer to defend against Server-Side Request Forgery (SSRF) attacks and other unsafe outbound requests. The safety layer validates URL schemes, hostnames against an optional allowlist, and most critically, blocks requests to private IP ranges (RFC 1918, loopback, link-local, multicast, reserved).
+
+Private IPs are blocked at connection time (not before), so DNS-rebinding attacks cannot occur — the resolved IP is pinned and re-validated before the TCP connection is established.
+
+### Protected IP ranges
+
+The SSRF guard blocks connections to:
+- **Loopback** — `127.0.0.1`, `::1`
+- **Private (RFC 1918)** — `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`
+- **ULA** — `fc00::/7` (IPv6 private)
+- **Link-local** — `169.254.0.0/16` (IPv4), `fe80::/10` (IPv6)
+- **Multicast** — `224.0.0.0/4` (IPv4), `ff00::/8` (IPv6)
+- **Reserved & unspecified** — `0.0.0.0`, `255.255.255.255`, `::`
+
+### Guarded async client
+
+Use `guarded_async_client()` to create a client with automatic SSRF protection:
+
+```python
+from robotsix_http import guarded_async_client
+
+# Create a client that blocks private IPs
+client = guarded_async_client()
+
+try:
+    # Requests to public IPs are allowed
+    response = await client.get("https://example.com")
+    
+    # Requests to private IPs are rejected at connection time
+    response = await client.get("http://10.0.0.1")  # SSRFError
+finally:
+    await client.aclose()
+```
+
+### Hostname allowlist
+
+Restrict requests to a specific set of domains:
+
+```python
+from robotsix_http import guarded_async_client
+
+# Only api.example.com and its subdomains are allowed
+client = guarded_async_client(allowlist=["example.com"])
+
+# Allowed
+await client.get("https://api.example.com")
+await client.get("https://api.v2.example.com")
+
+# Blocked
+await client.get("https://evil.com")  # SSRFError
+```
+
+### Never-raises request wrapper
+
+For callers that prefer explicit result handling over exceptions, use `safe_http_request()`:
+
+```python
+from robotsix_http import safe_http_request, HttpResult
+
+result = await safe_http_request(client, "GET", "https://api.example.com")
+
+if result.ok:
+    print(f"Success: {result.status_code}")
+    print(f"Body: {result.text}")
+else:
+    print(f"Failed: {result.error}")
+    print(f"Status: {result.status_code}")  # None if no response received
+```
+
+`HttpResult` fields:
+- `ok` — `True` when a response was received and its status is not an error (< 400)
+- `url` — The final request URL (post-redirect on success, else the requested URL)
+- `status_code` — HTTP status code, or `None` if no response was received
+- `text` — Decoded response body, or `""` if unavailable
+- `headers` — Response headers, or an empty mapping
+- `error` — A `"<ExcType>: <message>"` string on failure, else `None`
+- `response` — The underlying `httpx.Response`, or `None` on failure
+
+### Eager validation
+
+To validate a URL before issuing a request, call `validate_url()`:
+
+```python
+from robotsix_http import validate_url, SSRFError
+
+url = "https://api.example.com/data"
+
+try:
+    validate_url(url, allowlist=["example.com"])
+    # URL is valid; safe to use
+except SSRFError as exc:
+    print(f"Blocked: {exc}")
+```
+
+`validate_url()` performs a blocking DNS lookup for hostname targets and raises `SSRFError` on any of:
+- Disallowed URL scheme (only `http` and `https` are permitted by default)
+- Hostname not in allowlist
+- Hostname resolves to a blocked IP range
+
+### Combining with RetryClient
+
+`RetryClient` and the guarded client are compatible — wrap a guarded client with `RetryClient` to get both retry logic and SSRF protection:
+
+```python
+from robotsix_http import guarded_async_client, RetryClient
+
+client = guarded_async_client(allowlist=["api.example.com"])
+rc = RetryClient(client)
+
+# All requests through rc have automatic retry + SSRF protection
+response = await rc.get("https://api.example.com/data")
+```
+
 ## Idempotency gating
 
 `RetryClient` uses the HTTP method to decide whether retrying on a response

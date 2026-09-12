@@ -419,7 +419,7 @@ class TestMethodIdempotencyGate:
         """
         call_count = 0
 
-        def handler(request: httpx.Request) -> httpx.Response:  # noqa: ARG001
+        def handler(request: httpx.Request) -> httpx.Response:
             nonlocal call_count
             call_count += 1
             raise httpx.ReadTimeout("read timed out")
