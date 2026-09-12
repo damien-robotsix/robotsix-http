@@ -134,6 +134,13 @@ result = call_with_retry(my_function, is_transient_fn=my_transient_check)
 
 The optional `robotsix_http.fastapi` submodule provides a canonical error envelope, wired exception handlers, and a health-check route factory — eliminating boilerplate duplication across services.
 
+Because `fastapi` is an optional dependency, the submodule is not imported eagerly at package top level. It is re-exported lazily, so both import styles work once the `fastapi` extra is installed:
+
+```python
+from robotsix_http import fastapi  # lazy re-export, no eager fastapi import
+from robotsix_http.fastapi import register_exception_handlers  # explicit
+```
+
 ### Setup
 
 Wire all exception handlers onto your FastAPI app:
