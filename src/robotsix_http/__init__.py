@@ -18,21 +18,37 @@ from robotsix_http.retry import (
     compute_backoff,
     is_transient,
 )
+from robotsix_http.safety import (
+    ALLOWED_SCHEMES,
+    HttpResult,
+    SSRFError,
+    SSRFGuardTransport,
+    guarded_async_client,
+    safe_http_request,
+    validate_url,
+)
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 __all__ = [
+    "ALLOWED_SCHEMES",
     "DEFAULT_CONFIG",
     "ExternalAuthError",
     "ExternalHTTPError",
     "ExternalRateLimitError",
     "ExternalServiceError",
+    "HttpResult",
     "RetryClient",
     "RetryConfig",
+    "SSRFError",
+    "SSRFGuardTransport",
     "acall_with_retry",
     "call_with_retry",
     "compute_backoff",
+    "guarded_async_client",
     "is_transient",
+    "safe_http_request",
+    "validate_url",
 ]
 
 try:
