@@ -11,6 +11,7 @@ import json
 from typing import Any
 
 import httpx
+import pytest
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -24,12 +25,18 @@ from robotsix_http import (
 )
 from robotsix_http.client import ExternalHTTPError
 from robotsix_http.fastapi import (
+    ChatSkillFrontmatter,
     DomainError,
+    app_route_paths,
+    assert_chat_skill_route_parity,
+    create_chat_skill_router,
     create_health_router,
+    documented_routes,
     domain_error_handler,
     error_envelope,
     external_http_error_handler,
     http_exception_handler,
+    parse_chat_skill_frontmatter,
     register_exception_handlers,
     unhandled_exception_handler,
     validation_exception_handler,
@@ -198,3 +205,157 @@ def test_register_exception_handlers_wires_suite() -> None:
     assert handlers[DomainError] is domain_error_handler
     assert handlers[ExternalHTTPError] is external_http_error_handler
     assert handlers[Exception] is unhandled_exception_handler
+
+
+# ---------------------------------------------------------------------------
+# chat-skill descriptor helpers
+# ---------------------------------------------------------------------------
+
+_SKILL = """\
+---
+name: robotsix-calendar
+description: Calendar service exposing CRUD operations over events.
+---
+
+# robotsix-calendar
+
+## Safety rules
+
+- `GET /events` — list events (read-only).
+- `POST /events` — create an event (confirmation-gated).
+- `DELETE /events/{event_id}` — delete an event (confirmation-gated).
+"""
+
+
+def test_parse_chat_skill_frontmatter_valid() -> None:
+    frontmatter = parse_chat_skill_frontmatter(_SKILL)
+    assert frontmatter == ChatSkillFrontmatter(
+        name="robotsix-calendar",
+        description="Calendar service exposing CRUD operations over events.",
+    )
+
+
+def test_parse_chat_skill_frontmatter_strips_quotes() -> None:
+    text = '---\nname: robotsix-invest\ndescription: "One sentence."\n---\nbody\n'
+    frontmatter = parse_chat_skill_frontmatter(text)
+    assert frontmatter.description == "One sentence."
+
+
+def test_parse_chat_skill_frontmatter_missing_block() -> None:
+    with pytest.raises(ValueError, match="frontmatter block"):
+        parse_chat_skill_frontmatter("# no frontmatter here\n")
+
+
+def test_parse_chat_skill_frontmatter_bad_name() -> None:
+    text = "---\nname: Robotsix_Calendar\ndescription: A thing.\n---\n"
+    with pytest.raises(ValueError, match="kebab-case"):
+        parse_chat_skill_frontmatter(text)
+
+
+def test_parse_chat_skill_frontmatter_empty_description() -> None:
+    text = "---\nname: robotsix-calendar\ndescription:\n---\n"
+    with pytest.raises(ValueError, match="description"):
+        parse_chat_skill_frontmatter(text)
+
+
+async def test_create_chat_skill_router_serves_markdown() -> None:
+    router = create_chat_skill_router(_SKILL)
+    routes = [r for r in router.routes if getattr(r, "path", None) == "/chat-skill"]
+    assert routes, "expected a /chat-skill route"
+    endpoint = routes[0].endpoint  # type: ignore[attr-defined]
+    response = await endpoint()
+    assert response.status_code == 200
+    assert response.media_type == "text/markdown"
+    assert response.body.decode() == _SKILL
+
+
+def test_create_chat_skill_router_custom_path() -> None:
+    router = create_chat_skill_router(_SKILL, path="/skill")
+    paths = {getattr(r, "path", None) for r in router.routes}
+    assert "/skill" in paths
+
+
+def test_create_chat_skill_router_validates_eagerly() -> None:
+    with pytest.raises(ValueError, match="frontmatter block"):
+        create_chat_skill_router("# missing frontmatter\n")
+
+
+def test_create_chat_skill_router_name_mismatch() -> None:
+    with pytest.raises(ValueError, match="component id"):
+        create_chat_skill_router(_SKILL, name="robotsix-invest")
+
+
+def test_create_chat_skill_router_name_match() -> None:
+    router = create_chat_skill_router(_SKILL, name="robotsix-calendar")
+    paths = {getattr(r, "path", None) for r in router.routes}
+    assert "/chat-skill" in paths
+
+
+def _events_app() -> FastAPI:
+    app = FastAPI()
+
+    @app.get("/events")
+    async def list_events() -> list[dict[str, Any]]:
+        return []
+
+    @app.post("/events")
+    async def create_event() -> dict[str, Any]:
+        return {}
+
+    @app.delete("/events/{event_id}")
+    async def delete_event(event_id: str) -> dict[str, Any]:
+        return {}
+
+    return app
+
+
+def test_documented_routes_extracts_method_paths() -> None:
+    assert documented_routes(_SKILL) == {
+        "/events",
+        "/events/{event_id}",
+    }
+
+
+def test_app_route_paths_lists_api_routes() -> None:
+    app = _events_app()
+    app.include_router(create_health_router())
+    assert app_route_paths(app) == {"/events", "/events/{event_id}", "/health"}
+
+
+def test_assert_chat_skill_route_parity_ok() -> None:
+    app = _events_app()
+    app.include_router(create_health_router())
+    app.include_router(create_chat_skill_router(_SKILL))
+    assert_chat_skill_route_parity(app, _SKILL)
+
+
+def test_assert_chat_skill_route_parity_undocumented_route() -> None:
+    app = _events_app()
+
+    @app.get("/secret")
+    async def secret() -> dict[str, Any]:
+        return {}
+
+    with pytest.raises(AssertionError, match="absent from the chat-skill"):
+        assert_chat_skill_route_parity(app, _SKILL)
+
+
+def test_assert_chat_skill_route_parity_dangling_documented_route() -> None:
+    app = FastAPI()
+
+    @app.get("/events")
+    async def list_events() -> list[dict[str, Any]]:
+        return []
+
+    with pytest.raises(AssertionError, match="documented in the chat-skill"):
+        assert_chat_skill_route_parity(app, _SKILL)
+
+
+def test_assert_chat_skill_route_parity_ignore_extra() -> None:
+    app = _events_app()
+
+    @app.get("/metrics")
+    async def metrics() -> dict[str, Any]:
+        return {}
+
+    assert_chat_skill_route_parity(app, _SKILL, ignore={"/metrics"})
