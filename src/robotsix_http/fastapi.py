@@ -8,7 +8,7 @@ repeats by hand:
   (request validation, ``HTTPException``, :class:`DomainError`,
   :func:`external_http_error_handler`, and a catch-all for unhandled errors);
 * :func:`create_health_router`, a ``/health`` route factory returning
-  ``{"status": "ok"}``;
+  ``{"status": "ok"}`` with optional custom-field extensibility;
 * :func:`create_chat_skill_router`, a ``/chat-skill`` route factory serving a
   validated ``text/markdown`` chat-access descriptor, plus
   :func:`assert_chat_skill_route_parity` to keep that descriptor in sync with
@@ -27,7 +27,7 @@ per-service migration tickets.
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from typing import Any, cast
 
@@ -186,16 +186,42 @@ def register_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(Exception, unhandled_exception_handler)
 
 
-def create_health_router(path: str = "/health") -> APIRouter:
+def create_health_router(
+    path: str = "/health",
+    extra_fields_fn: Callable[[], dict[str, Any]] | None = None,
+) -> APIRouter:
     """Return an :class:`~fastapi.APIRouter` exposing a health-check route.
 
-    The route responds to ``GET {path}`` with ``{"status": "ok"}``.
+    The route responds to ``GET {path}`` with a base response of
+    ``{"status": "ok"}`` optionally extended with custom fields.
+
+    :param path: the URL path for the health endpoint (default: ``/health``).
+    :param extra_fields_fn: an optional callable that returns a dictionary of
+        additional fields to merge into the health response. Called on each
+        request. If the callable returns fields that conflict with the base
+        ``status`` field, the extra fields take precedence. Example usage::
+
+            def get_auth_status() -> dict[str, Any]:
+                return {"auth_configured": check_auth_configured()}
+
+            router = create_health_router(extra_fields_fn=get_auth_status)
+
+        The health response would then be::
+
+            {"status": "ok", "auth_configured": true}
+
+        allowing downstream services to extend the health contract without
+        reimplementing the entire health endpoint.
     """
     router = APIRouter()
 
     @router.get(path)
-    async def health() -> dict[str, str]:
-        return {"status": "ok"}
+    async def health() -> dict[str, Any]:
+        response: dict[str, Any] = {"status": "ok"}
+        if extra_fields_fn is not None:
+            extra_fields = extra_fields_fn()
+            response.update(extra_fields)
+        return response
 
     return router
 
@@ -213,7 +239,7 @@ def create_health_router(path: str = "/health") -> APIRouter:
 
 _FRONTMATTER_RE = re.compile(r"\A---[ \t]*\n(.*?)\n---[ \t]*(?:\n|\Z)", re.DOTALL)
 _KEBAB_CASE_RE = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
-_DOCUMENTED_ROUTE_RE = re.compile(r"\b(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+(/[^\s`)>\"']*)")
+_DOCUMENTED_ROUTE_RE = re.compile(r"\b(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+(/[^\s`)>\"']*))")
 _DEFAULT_PARITY_IGNORE = frozenset({"/health", "/chat-skill"})
 
 
