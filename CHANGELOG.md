@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- towncrier release notes start -->
 
+## [0.5.0](https://github.com/damien-robotsix/robotsix-http/compare/v0.4.0...v0.5.0) (2026-09-16)
+
+
+### Features
+
+* Extract a shared chat-skill descriptor helper (5 repos hand-roll GET /chat-skill markdown+frontmatter serving + route-parity) (20260916T080026Z-extract-a-shared-chat-skill-descriptor-h-f0c5) ([#115](https://github.com/damien-robotsix/robotsix-http/issues/115)) ([7557325](https://github.com/damien-robotsix/robotsix-http/commit/7557325f0cd08e47124b588710da011951feb421))
+
 ## [0.4.0](https://github.com/damien-robotsix/robotsix-http/compare/v0.3.3...v0.4.0) (2026-09-08)
 
 
