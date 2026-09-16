@@ -323,6 +323,54 @@ The default health route responds to `GET /health` with `{"status": "ok"}`. Cust
 app.include_router(create_health_router(path="/healthz"))
 ```
 
+### Chat-access descriptor
+
+Per the `robotsix-standards/docs/chat-access-standard.md`, every service exposes an opt-in `GET /chat-skill` endpoint serving a `text/markdown` descriptor with YAML frontmatter. The descriptor declares the component id (`name`, kebab-case) and a one-sentence description, followed by a safety-rules section classifying operations as read-only or confirmation-gated.
+
+Use `create_chat_skill_router()` to serve the descriptor without hand-rolling the serving or frontmatter:
+
+```python
+from robotsix_http.fastapi import create_chat_skill_router
+
+CHAT_SKILL = """\
+---
+name: robotsix-calendar
+description: Calendar service exposing CRUD operations over events.
+---
+
+# robotsix-calendar
+
+## Safety rules
+
+- `GET /events` — list events (read-only).
+- `POST /events` — create an event (confirmation-gated).
+- `DELETE /events/{event_id}` — delete an event (confirmation-gated).
+"""
+
+app.include_router(create_chat_skill_router(CHAT_SKILL, name="robotsix-calendar"))
+```
+
+The `name` parameter is optional but recommended — it asserts the descriptor's frontmatter name matches your expected component id, catching mismatches at startup time.
+
+#### Route-parity testing
+
+Use `assert_chat_skill_route_parity()` to ensure the descriptor and your app stay in sync — every registered route is documented, and every documented route resolves:
+
+```python
+from robotsix_http.fastapi import assert_chat_skill_route_parity
+
+
+def test_chat_skill_routes_match_api():
+    """Descriptor routes match the app's real routes."""
+    assert_chat_skill_route_parity(app, CHAT_SKILL)
+```
+
+`/health` and `/chat-skill` are ignored by default. Pass `ignore` to skip additional infrastructure paths:
+
+```python
+assert_chat_skill_route_parity(app, CHAT_SKILL, ignore={"/metrics", "/admin"})
+```
+
 ## Logging
 
 `robotsix_http` emits DEBUG records on the package loggers
