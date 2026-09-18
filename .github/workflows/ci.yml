@@ -17,7 +17,7 @@ jobs:
       install-extras: ""
       run-deptry: true
       run-audit: false
-      run-bandit: false
+      run-bandit: true
       bandit-severity: "medium"
       mypy-advisory: false
       pytest-args: ""
