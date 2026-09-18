@@ -23,6 +23,13 @@ from robotsix_http.client import (
 )
 from robotsix_http.retry import RetryConfig
 
+
+def _is_408(exc: Exception) -> bool:
+    """Custom transient predicate matching any exception carrying HTTP 408."""
+    response = getattr(exc, "response", None)
+    return isinstance(response, httpx.Response) and response.status_code == 408
+
+
 # ---------------------------------------------------------------------------
 # _parse_retry_after
 # ---------------------------------------------------------------------------
@@ -182,6 +189,31 @@ class TestIsRetryableForMethod:
 
     def test_post_non_transient(self) -> None:
         assert _is_retryable_for_method("POST", ValueError("nope")) is False
+
+    def test_408_not_transient_by_default_for_get(self) -> None:
+        request = httpx.Request("GET", "http://example.com")
+        response = httpx.Response(408, request=request)
+        exc = httpx.HTTPStatusError("boom", request=request, response=response)
+        assert _is_retryable_for_method("GET", exc) is False
+
+    def test_get_retries_408_with_custom_predicate(self) -> None:
+        request = httpx.Request("GET", "http://example.com")
+        response = httpx.Response(408, request=request)
+        exc = httpx.HTTPStatusError("boom", request=request, response=response)
+        assert _is_retryable_for_method("GET", exc, _is_408) is True
+
+    def test_custom_predicate_classifies_domain_exception(self) -> None:
+        class DomainError(Exception): ...
+
+        exc = DomainError("upstream hiccup")
+        assert _is_retryable_for_method("GET", exc) is False
+        assert _is_retryable_for_method("GET", exc, lambda e: isinstance(e, DomainError)) is True
+
+    def test_custom_predicate_narrows_post_connect_retry(self) -> None:
+        """A custom predicate is honoured on the POST pre-delivery gate too."""
+        exc = httpx.ConnectError("connection refused")
+        assert _is_retryable_for_method("POST", exc) is True
+        assert _is_retryable_for_method("POST", exc, lambda e: False) is False
 
 
 # ---------------------------------------------------------------------------
@@ -526,6 +558,85 @@ class TestTypedExceptionsAfterExhaustion:
 # ---------------------------------------------------------------------------
 # Misc
 # ---------------------------------------------------------------------------
+
+
+class TestRetryClientCustomTransientPredicate:
+    async def test_get_retries_408_until_success_with_custom_predicate(self) -> None:
+        call_count = 0
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal call_count
+            call_count += 1
+            if call_count < 3:
+                return httpx.Response(408, request=request)
+            return httpx.Response(200, json={"ok": True})
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(transport=transport) as client:
+            rc = RetryClient(
+                client,
+                config=RetryConfig(max_retries=3, jitter_factor=0.0),
+                is_transient_fn=_is_408,
+            )
+            response = await rc.get("http://example.com")
+        assert response.status_code == 200
+        assert call_count == 3
+
+    async def test_get_does_not_retry_408_by_default(self) -> None:
+        call_count = 0
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal call_count
+            call_count += 1
+            return httpx.Response(408, request=request)
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(transport=transport) as client:
+            rc = RetryClient(client, config=RetryConfig(max_retries=4, jitter_factor=0.0))
+            with pytest.raises(httpx.HTTPStatusError):
+                await rc.get("http://example.com")
+        assert call_count == 1
+
+    async def test_get_retries_custom_domain_exception(self) -> None:
+        class DomainError(Exception): ...
+
+        call_count = 0
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal call_count
+            call_count += 1
+            raise DomainError("upstream hiccup")
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(transport=transport) as client:
+            rc = RetryClient(
+                client,
+                config=RetryConfig(max_retries=1, jitter_factor=0.0),
+                is_transient_fn=lambda exc: isinstance(exc, DomainError),
+            )
+            with pytest.raises(DomainError):
+                await rc.get("http://example.com")
+        assert call_count == 2
+
+    async def test_default_classification_when_predicate_none(self) -> None:
+        """is_transient_fn=None keeps the default 5xx classification."""
+        call_count = 0
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal call_count
+            call_count += 1
+            return httpx.Response(503, request=request)
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(transport=transport) as client:
+            rc = RetryClient(
+                client,
+                config=RetryConfig(max_retries=1, jitter_factor=0.0),
+                is_transient_fn=None,
+            )
+            with pytest.raises(ExternalServiceError):
+                await rc.get("http://example.com")
+        assert call_count == 2
 
 
 class TestRetryClientMisc:

@@ -67,6 +67,34 @@ resp = await rc.get("https://api.example.com/data", config=config)
 
 `RetryConfig` validates all parameters at construction time, raising `ValueError` if any value is invalid (e.g., negative `max_retries`, zero `backoff_cap`, or `jitter_factor` outside [0, 1.0]). See the class docstring for constraint details.
 
+### Custom transient classification
+
+Like the low-level `call_with_retry` / `acall_with_retry` functions, `RetryClient`
+accepts an optional `is_transient_fn` predicate that overrides which exceptions are
+considered transient and warrant a retry. Omit it (or pass `None`) to keep the
+default `is_transient()` classification:
+
+```python
+import httpx
+from robotsix_http import RetryClient
+
+
+def is_retryable(exc):
+    """Retry on the default transient set, plus any HTTP 408 response."""
+    response = getattr(exc, "response", None)
+    if isinstance(response, httpx.Response) and response.status_code == 408:
+        return True
+    return isinstance(exc, httpx.TimeoutException) or isinstance(exc, httpx.TransportError)
+
+
+rc = RetryClient(client, is_transient_fn=is_retryable)
+```
+
+The predicate is honoured on every method (both the freely-retried GET/DELETE/PUT/
+HEAD/OPTIONS set and the idempotency-gated POST/PATCH pre-delivery path). Note that
+the idempotency gate still applies: even with a custom predicate, a POST/PATCH that
+already received a response is never retried.
+
 ## API overview
 
 | Symbol | Description |
