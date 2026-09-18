@@ -77,6 +77,15 @@ resp = await rc.get("https://api.example.com/data", config=config)
 | `call_with_retry` | Synchronous retry loop for an arbitrary callable. Uses `asyncio.run()` internally so it works with both sync and async functions. |
 | `acall_with_retry` | Async retry loop for an arbitrary callable. Call from within an existing event loop. |
 | `is_transient` | Predicate: returns `True` for `httpx.TimeoutException`, `httpx.TransportError`, `json.JSONDecodeError`, and any exception carrying HTTP 429 or 5xx (walking the cause chain). |
+| `guarded_async_client` | Async client factory that wraps `httpx.AsyncClient` with SSRF protection: blocks private IP ranges at connection time (defeating DNS-rebinding) and optionally enforces a hostname allowlist. |
+| `safe_http_request` | Never-raises request wrapper: performs a request and returns an `HttpResult` instead of raising, for callers that prefer explicit result handling. |
+| `HttpResult` | Result dataclass from `safe_http_request`: `ok`, `url`, `status_code`, `text`, `headers`, `error`, and the underlying `response`. |
+| `validate_url` | Eager URL validation: checks the scheme, an optional hostname allowlist, and that the hostname does not resolve to a blocked IP range, raising `SSRFError` on any violation. |
+| `SSRFError` | Exception raised by the safety layer when a URL, hostname, or resolved IP is blocked (invalid scheme, not in allowlist, or private/reserved range). |
+| `SSRFGuardTransport` | `httpx` transport that pins the resolved IP and re-validates it against blocked ranges before the TCP connection is established. |
+| `ALLOWED_SCHEMES` | Tuple of URL schemes permitted by default by the safety layer (`"http"` and `"https"`). |
+
+> The optional `robotsix_http.fastapi` submodule (lazy re-export) is not part of the core `__all__`; see its dedicated section below.
 
 ### Exception hierarchy
 
