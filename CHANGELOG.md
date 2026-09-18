@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- towncrier release notes start -->
 
+## [0.6.0](https://github.com/damien-robotsix/robotsix-http/compare/v0.5.0...v0.6.0) (2026-09-18)
+
+
+### Features
+
+* Add custom transient-error predicate support to RetryClient (20260918T134757Z-add-custom-transient-error-predicate-sup-8434) ([#120](https://github.com/damien-robotsix/robotsix-http/issues/120)) ([ad27626](https://github.com/damien-robotsix/robotsix-http/commit/ad27626e6387753626b30d6b647b6e29b39fac20))
+
 ## [0.5.0](https://github.com/damien-robotsix/robotsix-http/compare/v0.4.0...v0.5.0) (2026-09-16)
 
 
