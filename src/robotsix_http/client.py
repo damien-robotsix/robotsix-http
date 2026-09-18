@@ -10,6 +10,7 @@ import datetime
 import email.utils
 import logging
 import re
+from collections.abc import Callable
 from typing import Any
 
 import httpx
@@ -122,7 +123,9 @@ def _is_pre_delivery(exc: BaseException, max_depth: int = 10) -> bool:
     return False
 
 
-def _is_retryable_for_method(method: str, exc: Exception) -> bool:
+def _is_retryable_for_method(
+    method: str, exc: Exception, is_transient_fn: Callable[[Exception], bool] | None = None
+) -> bool:
     """Determine whether *exc* warrants a retry given the HTTP *method*.
 
     Per the idempotency gate:
@@ -133,14 +136,18 @@ def _is_retryable_for_method(method: str, exc: Exception) -> bool:
       how one ``POST /tickets/ingest`` call became three tickets.
     * **GET / DELETE / PUT / HEAD / OPTIONS** — retried freely (all
       transient errors including 429 and 5xx).
+
+    *is_transient_fn* optionally overrides the default transient
+    classification (:func:`is_transient`); ``None`` keeps the default.
     """
+    transient = is_transient_fn if is_transient_fn is not None else is_transient
     if method.upper() in _SAFE_METHODS:
-        return is_transient(exc)
+        return transient(exc)
     # For POST and PATCH: a response was received, so the server processed
     # the request — do not retry regardless of status code.
     if isinstance(exc, httpx.HTTPStatusError):
         return False
-    return _is_pre_delivery(exc) and is_transient(exc)
+    return _is_pre_delivery(exc) and transient(exc)
 
 
 # ---------------------------------------------------------------------------
@@ -189,15 +196,20 @@ class RetryClient:
         client: The underlying :class:`httpx.AsyncClient` to use for requests.
         config: Default retry configuration.  Individual method calls may
             override it via their ``config`` keyword argument.
+        is_transient_fn: Optional custom predicate deciding whether an
+            exception warrants a retry.  ``None`` uses the default
+            :func:`is_transient` classification.
     """
 
     def __init__(
         self,
         client: httpx.AsyncClient,
         config: RetryConfig = DEFAULT_CONFIG,
+        is_transient_fn: Callable[[Exception], bool] | None = None,
     ) -> None:
         self._client = client
         self._config = config
+        self._is_transient_fn = is_transient_fn
 
     # -- Convenience methods -------------------------------------------------
 
@@ -287,7 +299,7 @@ class RetryClient:
                         cfg.on_retry_exhausted(attempt + 1, exc)
                     logger.debug("retries exhausted after %d attempt(s): %s", attempt + 1, exc)
                     raise _map_exception(exc) from exc
-                if not _is_retryable_for_method(method, exc):
+                if not _is_retryable_for_method(method, exc, self._is_transient_fn):
                     if cfg.on_retry_exhausted is not None:
                         cfg.on_retry_exhausted(attempt + 1, exc)
                     logger.debug("retries exhausted after %d attempt(s): %s", attempt + 1, exc)
