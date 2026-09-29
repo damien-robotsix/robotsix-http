@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- towncrier release notes start -->
 
+## [0.7.0](https://github.com/damien-robotsix/robotsix-http/compare/v0.6.0...v0.7.0) (2026-09-29)
+
+
+### Features
+
+* Extract a shared request/correlation-ID ASGI middleware into robotsix_http.fastapi (20260929T064659Z-extract-a-shared-request-correlation-id-6a5e) ([#130](https://github.com/damien-robotsix/robotsix-http/issues/130)) ([be2dcd5](https://github.com/damien-robotsix/robotsix-http/commit/be2dcd5e58addaf6684ceb67450436c13aae6619))
+
 ## [0.6.0](https://github.com/damien-robotsix/robotsix-http/compare/v0.5.0...v0.6.0) (2026-09-18)
 
 
