@@ -19,7 +19,7 @@ classifiers = [
 keywords = ["robotsix", "http", "retry", "backoff"]
 
 [project.optional-dependencies]
-fastapi = ["fastapi>=0.115"]
+fastapi = ["fastapi>=0.115", "structlog>=25"]
 
 [dependency-groups]
 dev = [
@@ -31,6 +31,7 @@ dev = [
     "deptry>=0.23",
     "robotsix-modules",
     "fastapi>=0.115",
+    "structlog>=25",
 ]
 
 [tool.uv.sources]
