@@ -27,15 +27,20 @@ per-service migration tickets.
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable
+import time
+import uuid
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
+import structlog
 from fastapi import APIRouter, FastAPI, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, PlainTextResponse
+from starlette.datastructures import Headers, MutableHeaders
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from structlog.contextvars import bind_contextvars, unbind_contextvars
 
 from robotsix_http.client import (
     ExternalAuthError,
@@ -44,12 +49,17 @@ from robotsix_http.client import (
     ExternalServiceError,
 )
 
+if TYPE_CHECKING:
+    from starlette.types import ASGIApp, Message, Receive, Scope, Send
+
 __all__ = [
     "ChatSkillFrontmatter",
+    "CorrelationIdMiddleware",
     "DomainError",
     "app_route_paths",
     "assert_chat_skill_route_parity",
     "create_chat_skill_router",
+    "create_correlation_id_middleware",
     "create_health_router",
     "documented_routes",
     "domain_error_handler",
@@ -198,6 +208,145 @@ def create_health_router(path: str = "/health") -> APIRouter:
         return {"status": "ok"}
 
     return router
+
+
+def _default_correlation_id() -> str:
+    """Generate a random hex correlation id."""
+    return uuid.uuid4().hex
+
+
+def _as_name_tuple(value: str | Sequence[str]) -> tuple[str, ...]:
+    """Normalise a single name or sequence of names into a non-empty tuple."""
+    names = (value,) if isinstance(value, str) else tuple(value)
+    if not names:
+        raise ValueError("expected at least one header/context name")
+    return names
+
+
+class CorrelationIdMiddleware:
+    """Pure-ASGI correlation-ID middleware.
+
+    Deliberately implemented as raw ASGI rather than
+    :class:`starlette.middleware.base.BaseHTTPMiddleware` so the correlation id
+    bound into ``structlog`` contextvars propagates across ``await`` boundaries
+    all the way to the endpoint (and any downstream calls it makes) — a
+    ``BaseHTTPMiddleware`` runs the request in a separate task and would break
+    that propagation.
+
+    For every incoming HTTP request it:
+
+    * reads the correlation id from the first present request header named in
+      *header_name* (default ``X-Request-ID``), or generates one with
+      *generator* when none is present;
+    * binds that id into ``structlog`` contextvars under every key in
+      *context_field* (default ``correlation_id``), unbinding them in a
+      ``finally`` block so ids never leak between requests;
+    * echoes the id back on the response under the primary (first) header name;
+    * optionally logs ``request.start`` / ``request.end`` events — the latter
+      carrying a ``duration_ms`` timing — when *log_requests* is true.
+
+    Non-HTTP scopes (lifespan, websockets, …) are passed through untouched.
+
+    Args:
+        app: The wrapped ASGI application.
+        header_name: Request header (or ordered sequence of candidate headers)
+            to read the inbound id from; the first entry is also the header the
+            id is echoed back on.
+        context_field: One or more ``structlog`` contextvar keys to bind the id
+            to.
+        generator: Zero-argument callable returning a fresh id when no inbound
+            header is present.
+        log_requests: When true, emit ``request.start`` / ``request.end`` logs.
+        logger: Optional ``structlog`` logger to use; defaults to a logger named
+            ``robotsix_http.correlation``.
+    """
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        *,
+        header_name: str | Sequence[str] = "X-Request-ID",
+        context_field: str | Sequence[str] = "correlation_id",
+        generator: Callable[[], str] = _default_correlation_id,
+        log_requests: bool = False,
+        logger: Any | None = None,
+    ) -> None:
+        self.app = app
+        self._request_headers = _as_name_tuple(header_name)
+        self._response_header = self._request_headers[0]
+        self._context_fields = _as_name_tuple(context_field)
+        self._generator = generator
+        self._log_requests = log_requests
+        self._logger = (
+            logger if logger is not None else structlog.get_logger("robotsix_http.correlation")
+        )
+
+    def _extract(self, headers: Headers) -> str | None:
+        """Return the first non-empty inbound correlation header, if any."""
+        for name in self._request_headers:
+            value = headers.get(name)
+            if value:
+                return value
+        return None
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        correlation_id = self._extract(Headers(scope=scope)) or self._generator()
+        response_header = self._response_header
+
+        async def send_with_correlation_id(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                MutableHeaders(raw=message["headers"])[response_header] = correlation_id
+            await send(message)
+
+        bind_contextvars(**{field: correlation_id for field in self._context_fields})
+        start = time.perf_counter()
+        if self._log_requests:
+            self._logger.info(
+                "request.start",
+                method=scope.get("method"),
+                path=scope.get("path"),
+            )
+        try:
+            await self.app(scope, receive, send_with_correlation_id)
+        finally:
+            if self._log_requests:
+                duration_ms = (time.perf_counter() - start) * 1000.0
+                self._logger.info(
+                    "request.end",
+                    method=scope.get("method"),
+                    path=scope.get("path"),
+                    duration_ms=round(duration_ms, 3),
+                )
+            unbind_contextvars(*self._context_fields)
+
+
+def create_correlation_id_middleware(
+    app: FastAPI,
+    *,
+    header_name: str | Sequence[str] = "X-Request-ID",
+    context_field: str | Sequence[str] = "correlation_id",
+    generator: Callable[[], str] = _default_correlation_id,
+    log_requests: bool = False,
+    logger: Any | None = None,
+) -> None:
+    """Register :class:`CorrelationIdMiddleware` on *app*.
+
+    Convenience wrapper over ``app.add_middleware(CorrelationIdMiddleware, ...)``
+    that mirrors :func:`register_exception_handlers`.  All keyword arguments are
+    forwarded verbatim to :class:`CorrelationIdMiddleware`.
+    """
+    app.add_middleware(
+        CorrelationIdMiddleware,
+        header_name=header_name,
+        context_field=context_field,
+        generator=generator,
+        log_requests=log_requests,
+        logger=logger,
+    )
 
 
 # ---------------------------------------------------------------------------
