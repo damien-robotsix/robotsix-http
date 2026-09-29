@@ -348,10 +348,10 @@ from robotsix_http import refresh_and_persist
 
 # Acquire a valid token, refreshing and re-persisting if needed
 token = refresh_and_persist(
-    load=store.load,                          # Load current token
+    load=store.load,  # Load current token
     is_valid=lambda t: t.get("expires_at") > time.time(),  # Check validity
     refresh=lambda current: oauth_client.refresh(current),  # Refresh provider
-    persist=store.save,                       # Re-persist the refreshed token
+    persist=store.save,  # Re-persist the refreshed token
 )
 ```
 
@@ -365,6 +365,7 @@ Build a zero-argument `() -> str` access-token provider for downstream HTTP clie
 ```python
 from robotsix_http import build_token_provider
 
+
 def acquire():
     """Closure over the store and refresh logic."""
     return refresh_and_persist(
@@ -373,6 +374,7 @@ def acquire():
         refresh=refresh_oauth_token,
         persist=store.save,
     )
+
 
 provider = build_token_provider(
     acquire=acquire,
@@ -401,11 +403,13 @@ from robotsix_http import (
     RetryClient,
 )
 
+
 # Define your provider (e.g. OAuth2 code-flow client)
 class OAuth2Client:
     def refresh(self, current_token):
         # Call upstream OAuth2 provider to refresh
         return {"access_token": "new-token", "expires_at": time.time() + 3600}
+
 
 oauth_client = OAuth2Client()
 
@@ -416,6 +420,7 @@ store = SecureTokenStore(
     loads=json.loads,
 )
 
+
 # Build the token provider
 def acquire():
     return refresh_and_persist(
@@ -424,6 +429,7 @@ def acquire():
         refresh=oauth_client.refresh,
         persist=store.save,
     )
+
 
 provider = build_token_provider(
     acquire=acquire,
