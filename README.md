@@ -360,6 +360,52 @@ The default health route responds to `GET /health` with `{"status": "ok"}`. Cust
 app.include_router(create_health_router(path="/healthz"))
 ```
 
+### Correlation ID middleware
+
+The `CorrelationIdMiddleware` automatically attaches a correlation/request ID to every request, binding it into `structlog` contextvars so it propagates across `await` boundaries to all downstream code and logging.
+
+It is implemented as raw ASGI (not `BaseHTTPMiddleware`) to ensure contextvar propagation reaches your endpoints and any downstream calls they make.
+
+```python
+from robotsix_http.fastapi import create_correlation_id_middleware
+
+app = FastAPI()
+
+# Register the middleware (default: read/generate X-Request-ID, bind as correlation_id)
+create_correlation_id_middleware(app)
+
+# All requests now have correlation_id bound in structlog contextvars
+```
+
+For each request, the middleware:
+
+- **Reads or generates** an ID: extracts an existing correlation ID from the first matching request header (e.g. `X-Request-ID`), or generates one with `uuid.uuid4().hex` if absent
+- **Binds it** into `structlog` contextvars so every log call in that request carries the ID
+- **Echoes it back** on the response under the same header name
+- **Unbinds after** the request completes, preventing leaks between requests
+
+#### Customization
+
+Override the header name(s), context field(s), ID generator, and optional request timing logs:
+
+```python
+create_correlation_id_middleware(
+    app,
+    header_name=["X-Correlation-ID", "X-Request-ID"],  # Primary header is the first one
+    context_field=["correlation_id", "request_id"],
+    generator=lambda: "custom-prefix-" + uuid.uuid4().hex,
+    log_requests=True,  # Log request.start / request.end with duration_ms
+)
+```
+
+Parameters:
+
+- `header_name` — one header name (string) or ordered list of candidate headers to read from. The first entry is the header the ID is echoed back on.
+- `context_field` — one field name (string) or list of `structlog` contextvar keys to bind the ID under.
+- `generator` — zero-argument callable returning a fresh ID (default: `uuid.uuid4().hex`).
+- `log_requests` — when true, emit `request.start` and `request.end` log events with timing (default: `False`).
+- `logger` — optional `structlog` logger instance (default: `structlog.get_logger("robotsix_http.correlation")`).
+
 ### Chat-access descriptor
 
 Per the `robotsix-standards/docs/chat-access-standard.md`, every service exposes an opt-in `GET /chat-skill` endpoint serving a `text/markdown` descriptor with YAML frontmatter. The descriptor declares the component id (`name`, kebab-case) and a one-sentence description, followed by a safety-rules section classifying operations as read-only or confirmation-gated.
