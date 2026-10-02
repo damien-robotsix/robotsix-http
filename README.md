@@ -104,6 +104,7 @@ already received a response is never retried.
 | `DEFAULT_CONFIG` | Module-level `RetryConfig` singleton with sensible defaults. |
 | `call_with_retry` | Synchronous retry loop for an arbitrary callable. Uses `asyncio.run()` internally so it works with both sync and async functions. |
 | `acall_with_retry` | Async retry loop for an arbitrary callable. Call from within an existing event loop. |
+| `compute_backoff` | `compute_backoff(attempt, config)` — returns the jittered exponential backoff delay (seconds) used internally by the retry loops for a given attempt number and `RetryConfig`. The raw delay is `min(backoff_base ** attempt, backoff_cap)`; multiplicative jitter then yields a value in `[delay * (1 - jitter_factor), delay]` (always ≥ 0). |
 | `is_transient` | Predicate: returns `True` for `httpx.TimeoutException`, `httpx.TransportError`, `json.JSONDecodeError`, and any exception carrying HTTP 429 or 5xx (walking the cause chain). |
 | `guarded_async_client` | Async client factory that wraps `httpx.AsyncClient` with SSRF protection: blocks private IP ranges at connection time (defeating DNS-rebinding) and optionally enforces a hostname allowlist. |
 | `safe_http_request` | Never-raises request wrapper: performs a request and returns an `HttpResult` instead of raising, for callers that prefer explicit result handling. |
