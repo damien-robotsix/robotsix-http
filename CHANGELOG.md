@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- towncrier release notes start -->
 
+## [0.7.1](https://github.com/damien-robotsix/robotsix-http/compare/v0.7.0...v0.7.1) (2026-10-02)
+
+
+### Documentation
+
+* Document public `compute_backoff` export in README API overview (20261002T061055Z-document-public-compute-backoff-export-i-abea) ([#133](https://github.com/damien-robotsix/robotsix-http/issues/133)) ([6a8f8d0](https://github.com/damien-robotsix/robotsix-http/commit/6a8f8d04ee87327af1c28a3adcc5892f0e22f4aa))
+
 ## [0.7.0](https://github.com/damien-robotsix/robotsix-http/compare/v0.6.0...v0.7.0) (2026-09-29)
 
 
