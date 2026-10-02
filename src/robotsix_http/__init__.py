@@ -11,6 +11,13 @@ from robotsix_http.client import (
     ExternalServiceError,
     RetryClient,
 )
+from robotsix_http.oauth import (
+    SecureTokenStore,
+    build_token_provider,
+    read_secret_file,
+    refresh_and_persist,
+    write_secret_file,
+)
 from robotsix_http.retry import (
     RetryConfig,
     acall_with_retry,
@@ -42,13 +49,18 @@ __all__ = [
     "RetryConfig",
     "SSRFError",
     "SSRFGuardTransport",
+    "SecureTokenStore",
     "acall_with_retry",
+    "build_token_provider",
     "call_with_retry",
     "compute_backoff",
     "guarded_async_client",
     "is_transient",
+    "read_secret_file",
+    "refresh_and_persist",
     "safe_http_request",
     "validate_url",
+    "write_secret_file",
 ]
 
 try:
