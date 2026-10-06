@@ -35,7 +35,7 @@ dev = [
 ]
 
 [tool.uv.sources]
-robotsix-modules = { git = "https://github.com/damien-robotsix/robotsix-modules", rev = "7bb8157088dc8599c44b11803dbb83403bca8f98" }
+robotsix-modules = { git = "https://github.com/damien-robotsix/robotsix-modules", rev = "644fd4b1fefcee921ce5adcc0d6e3050f23e8064" }
 
 [tool.coverage.run]
 source = ["robotsix_http"]
