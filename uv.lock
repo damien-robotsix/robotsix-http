@@ -669,15 +669,15 @@ dev = [
     { name = "pytest", specifier = ">=8" },
     { name = "pytest-asyncio", specifier = ">=0.25" },
     { name = "pytest-cov", specifier = ">=7" },
-    { name = "robotsix-modules", git = "https://github.com/damien-robotsix/robotsix-modules?rev=7bb8157088dc8599c44b11803dbb83403bca8f98" },
+    { name = "robotsix-modules", git = "https://github.com/damien-robotsix/robotsix-modules?rev=6a366b9d696ed90dfff0964da2a0fd96a3b86ad0" },
     { name = "ruff", specifier = ">=0.16.3" },
     { name = "structlog", specifier = ">=25" },
 ]
 
 [[package]]
 name = "robotsix-modules"
-version = "0.5.1"
-source = { git = "https://github.com/damien-robotsix/robotsix-modules?rev=7bb8157088dc8599c44b11803dbb83403bca8f98#7bb8157088dc8599c44b11803dbb83403bca8f98" }
+version = "0.5.2"
+source = { git = "https://github.com/damien-robotsix/robotsix-modules?rev=6a366b9d696ed90dfff0964da2a0fd96a3b86ad0#6a366b9d696ed90dfff0964da2a0fd96a3b86ad0" }
 dependencies = [
     { name = "jsonschema" },
     { name = "pyyaml" },
