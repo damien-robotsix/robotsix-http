@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- towncrier release notes start -->
 
+## [0.8.0](https://github.com/damien-robotsix/robotsix-http/compare/v0.7.1...v0.8.0) (2026-10-06)
+
+
+### Features
+
+* Implement OAuth2 token-store extraction into robotsix_http.oauth (20260928T235900Z-implement-oauth2-token-store-extraction-0e1e) ([#131](https://github.com/damien-robotsix/robotsix-http/issues/131)) ([952d984](https://github.com/damien-robotsix/robotsix-http/commit/952d984b1d228efcc880bca9f7d6b00e14eb3eed))
+
 ## [0.7.1](https://github.com/damien-robotsix/robotsix-http/compare/v0.7.0...v0.7.1) (2026-10-02)
 
 
