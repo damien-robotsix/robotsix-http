@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- towncrier release notes start -->
 
+## [0.8.1](https://github.com/damien-robotsix/robotsix-http/compare/v0.8.0...v0.8.1) (2026-10-16)
+
+
+### Documentation
+
+* Extract OAuth2 and FastAPI deep-dive sections from README to docs/ (20261016T033102Z-extract-oauth2-and-fastapi-deep-dive-sec-f233) ([#144](https://github.com/damien-robotsix/robotsix-http/issues/144)) ([76d7bdb](https://github.com/damien-robotsix/robotsix-http/commit/76d7bdbe256e7ad77cc53512725bb1095a6b00c9))
+
 ## [0.8.0](https://github.com/damien-robotsix/robotsix-http/compare/v0.7.1...v0.8.0) (2026-10-06)
 
 
