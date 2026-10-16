@@ -626,7 +626,7 @@ wheels = [
 
 [[package]]
 name = "robotsix-http"
-version = "0.8.0"
+version = "0.8.1"
 source = { editable = "." }
 dependencies = [
     { name = "httpcore" },
