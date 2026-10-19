@@ -8,7 +8,7 @@ on:
 
 jobs:
   ci:
-    uses: damien-robotsix/robotsix-github-workflows/.github/workflows/python-ci.yml@f6219bfc4b1d44b8d574a7ea022882a2edba1c6c
+    uses: damien-robotsix/robotsix-github-workflows/.github/workflows/python-ci.yml@2de56a85055b60d0f01c406342eda081e68c0c8b
     with:
       python-version: "3.14"
       uv-version: "0.11.22"
@@ -40,7 +40,7 @@ jobs:
         with:
           python-version: "3.14"
 
-      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
         with:
           version: "0.11.22"
 
@@ -57,7 +57,7 @@ jobs:
 
       - name: Upload SARIF results
         if: success() || failure()
-        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2  # v3
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee  # v3
         with:
           sarif_file: uv-audit-results.sarif
           category: uv-audit
