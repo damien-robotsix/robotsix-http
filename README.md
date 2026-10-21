@@ -292,13 +292,13 @@ result = call_with_retry(my_function, is_transient_fn=my_transient_check)
 
 Several robotsix services (e.g. `robotsix-linkedin`, `robotsix-auto-mail`) persist OAuth2 credentials to disk with the same security posture: a `0600` secret file inside a `0700` parent directory, wrapped in a refresh-and-repersist lifecycle behind a zero-argument token-provider callable. The `robotsix_http.oauth` module extracts the provider-agnostic primitives (`write_secret_file`, `read_secret_file`, `SecureTokenStore`, `refresh_and_persist`, `build_token_provider`) so each consumer can layer its provider-specific serialization on top.
 
-See **[docs/oauth2-persistence.md](docs/oauth2-persistence.md)** for the full guide: secure file I/O, the token store, the refresh-and-repersist lifecycle, the token-provider factory, and a complete end-to-end example.
+See **[docs/core/oauth2-persistence.md](docs/core/oauth2-persistence.md)** for the full guide: secure file I/O, the token store, the refresh-and-repersist lifecycle, the token-provider factory, and a complete end-to-end example.
 
 ## FastAPI service bootstrap
 
 The optional `robotsix_http.fastapi` submodule provides a canonical error envelope, wired exception handlers, a health-check route factory, correlation-ID middleware, and a chat-access descriptor route — eliminating boilerplate duplication across services. Because `fastapi` is an optional dependency, the submodule is re-exported lazily (install the `fastapi` extra to use it).
 
-See **[docs/fastapi-bootstrap.md](docs/fastapi-bootstrap.md)** for the full guide: setup, the error envelope, the exception-handler suite, domain errors, health checks, correlation-ID middleware, and the chat-access descriptor with route-parity testing.
+See **[docs/core/fastapi-bootstrap.md](docs/core/fastapi-bootstrap.md)** for the full guide: setup, the error envelope, the exception-handler suite, domain errors, health checks, correlation-ID middleware, and the chat-access descriptor with route-parity testing.
 
 ## Logging
 

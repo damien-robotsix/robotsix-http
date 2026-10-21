@@ -18,8 +18,8 @@ modules:
       - README.md
       - SECURITY.md
       - docs/modules.yaml
-      - docs/oauth2-persistence.md
-      - docs/fastapi-bootstrap.md
+      - docs/core/oauth2-persistence.md
+      - docs/core/fastapi-bootstrap.md
       - pyproject.toml
       - src/robotsix_http/**
       - tests/core/**
