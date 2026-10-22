@@ -25,6 +25,34 @@ jobs:
       runs-on: "ubuntu-latest"
     secrets: inherit
 
+  gitleaks:
+    name: Gitleaks (secret scan)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v4
+        with:
+          # Full history so the scan covers every commit, not just the tip.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install gitleaks
+        env:
+          GITLEAKS_VERSION: "8.30.1"
+        run: |
+          curl -sSfL \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz gitleaks
+          sudo install gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: Scan full git history for secrets
+        # Non-bypassable backstop: pre-commit hooks can be skipped with
+        # `git commit --no-verify`, so CI re-scans the entire history.
+        run: gitleaks git . --redact --verbose
+
   uv-audit:
     name: UV Audit (SARIF)
     runs-on: ubuntu-latest
