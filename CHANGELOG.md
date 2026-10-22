@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- towncrier release notes start -->
 
+## [0.8.2](https://github.com/damien-robotsix/robotsix-http/compare/v0.8.1...v0.8.2) (2026-10-21)
+
+
+### Bug Fixes
+
+* ci_fix: out-of-scope CI failure — UV Audit (SARIF) (20261021T184419Z-ci-fix-out-of-scope-ci-failure-uv-audit-8504) ([#153](https://github.com/damien-robotsix/robotsix-http/issues/153)) ([70016cd](https://github.com/damien-robotsix/robotsix-http/commit/70016cdc27d3b724a111239ee54eb9be955c4d24))
+
 ## [0.8.1](https://github.com/damien-robotsix/robotsix-http/compare/v0.8.0...v0.8.1) (2026-10-16)
 
 
