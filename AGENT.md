@@ -39,3 +39,7 @@ uv run mypy src/ --strict
 ## CI
 
 Uses `damien-robotsix/robotsix-github-workflows` reusable workflows.
+
+> **Rule:** Never install a binary downloaded in `.github/workflows/` without verifying it against a SHA-256 pinned in the workflow file (env var), using `sha256sum -c` before extraction or install. Do not rely on a checksum file fetched from the same origin as the binary.
+>
+> **Rationale:** Observed in robotsix-http: the gitleaks CI job (ticket 20261016T061630Z-add-a-secret-scanner-gitleaks-to-pre-com-4251) downloaded and installed a security-gate binary with no integrity check; the follow-up 20261022T115214Z-verify-gitleaks-release-checksum-in-ci-g-bf34 (PR #155) added the pinned check. Single occurrence so far; the rule is recorded as a convention for human contributors adding CI tooling.
