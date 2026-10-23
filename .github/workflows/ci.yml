@@ -39,11 +39,17 @@ jobs:
 
       - name: Install gitleaks
         env:
+          # Keep in sync with the gitleaks `rev` in .pre-commit-config.yaml.
           GITLEAKS_VERSION: "8.30.1"
+          # SHA-256 of gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz, taken from
+          # the release's gitleaks_${GITLEAKS_VERSION}_checksums.txt. Pinned here
+          # so verification does not trust a second download from the same origin.
+          GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
         run: |
           curl -sSfL \
             "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
             -o gitleaks.tar.gz
+          echo "${GITLEAKS_SHA256}  gitleaks.tar.gz" | sha256sum -c -
           tar -xzf gitleaks.tar.gz gitleaks
           sudo install gitleaks /usr/local/bin/gitleaks
           gitleaks version
