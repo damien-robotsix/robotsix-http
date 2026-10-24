@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- towncrier release notes start -->
 
+## [0.8.3](https://github.com/damien-robotsix/robotsix-http/compare/v0.8.2...v0.8.3) (2026-10-23)
+
+
+### Documentation
+
+* AGENT.md: CI workflows — Never install a binary downloaded in `.github/workflows/` without verifying it… (20261023T160140Z-agent-md-ci-workflows-never-install-a-bi-2d83) ([#156](https://github.com/damien-robotsix/robotsix-http/issues/156)) ([cfc5216](https://github.com/damien-robotsix/robotsix-http/commit/cfc5216c35e94ae635777accbaaf5b9ccb4f63ea))
+
 ## [0.8.2](https://github.com/damien-robotsix/robotsix-http/compare/v0.8.1...v0.8.2) (2026-10-21)
 
 
