@@ -6,8 +6,18 @@ on:
   pull_request:
     branches: [main]
 
+# Cancel superseded runs of the same branch / PR.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# No workflow-level default; every job grants only what it needs.
+permissions: {}
+
 jobs:
   ci:
+    permissions:
+      contents: read  # check out the repo to lint, type-check and test it
     uses: damien-robotsix/robotsix-github-workflows/.github/workflows/python-ci.yml@2de56a85055b60d0f01c406342eda081e68c0c8b
     with:
       python-version: "3.14"
@@ -23,7 +33,6 @@ jobs:
       pytest-args: ""
       pytest-numprocesses: "auto"
       runs-on: "ubuntu-latest"
-    secrets: inherit
 
   gitleaks:
     name: Gitleaks (secret scan)
@@ -85,18 +94,20 @@ jobs:
           UV_PROJECT_ENVIRONMENT: system
 
       - name: Validate PR commit messages
-        run: >-
-          uv run cz check
-          --rev-range ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+        # SHAs are passed through env, not expanded into the script, so no
+        # event-supplied value is ever interpolated into shell code.
+        run: uv run cz check --rev-range "${BASE_SHA}..${HEAD_SHA}"
         env:
           UV_PROJECT_ENVIRONMENT: system
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
 
   uv-audit:
     name: UV Audit (SARIF)
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      security-events: write
+      contents: read  # check out the repo and read uv.lock
+      security-events: write  # upload the uv audit SARIF to code scanning
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v4
         with:
