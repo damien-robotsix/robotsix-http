@@ -1,0 +1,23 @@
+name: Lint Workflows
+
+on:
+  push:
+  pull_request:
+
+# Read-only: actionlint and zizmor only inspect the checked-out workflow files.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint workflows (actionlint + zizmor)
+    permissions:
+      contents: read  # check out the repo to lint .github/workflows/
+    uses: damien-robotsix/robotsix-github-workflows/.github/workflows/lint-workflows.yml@47523e8aa2d34d41da060d29b57f75ab262cb840  # v1.4.0
+    with:
+      run-actionlint: true
+      run-zizmor: true
