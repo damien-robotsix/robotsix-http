@@ -1,0 +1,26 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 4 * * 1"  # weekly, Monday 04:17 UTC
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  codeql:
+    name: CodeQL
+    permissions:
+      security-events: write  # upload CodeQL SARIF results
+      contents: read  # check out the repo for analysis
+      actions: read  # read workflow run metadata for CodeQL
+    uses: damien-robotsix/robotsix-github-workflows/.github/workflows/codeql.yml@47523e8aa2d34d41da060d29b57f75ab262cb840  # v1.4.0
+    with:
+      languages: python
+      build-mode: none
