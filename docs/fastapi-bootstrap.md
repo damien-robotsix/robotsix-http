@@ -76,6 +76,51 @@ The default health route responds to `GET /health` with `{"status": "ok"}`. Cust
 app.include_router(create_health_router(path="/healthz"))
 ```
 
+Called with no probe arguments, only that single route is mounted (unchanged behaviour).
+
+### Liveness, startup and readiness probes
+
+Pass a `ProbeState` and/or named dependency `checks` to also mount Kubernetes-style probes:
+
+```python
+from contextlib import asynccontextmanager
+
+from robotsix_http.fastapi import ProbeState, create_health_router
+
+state = ProbeState()
+
+
+async def check_db() -> None:
+    await db.execute("SELECT 1")  # raise on failure
+
+
+@asynccontextmanager
+async def lifespan(app):
+    state.mark_started()
+    yield
+    state.mark_shutting_down()  # also call this from a SIGTERM handler
+
+
+app = FastAPI(lifespan=lifespan)
+app.include_router(
+    create_health_router(
+        startup_path="/health/startup",  # off by default
+        checks={"db": check_db},
+        check_timeout_s=2.0,
+        state=state,
+    )
+)
+```
+
+| Route | Default path | Behaviour |
+|---|---|---|
+| health | `/health` | Always `200 {"status": "ok"}`. |
+| liveness | `/health/live` | No dependency checks. `200 {"status": "ok"}`, or `503 {"status": "shutting_down"}` after `mark_shutting_down()`. |
+| startup | disabled (`startup_path=None`) | `503 {"status": "starting"}` until `mark_started()`, then `200 {"status": "ok"}`. |
+| readiness | `/health/ready` | `503` `starting` / `shutting_down` in those states; otherwise runs every check concurrently, each under its own `check_timeout_s` timeout, and returns `503 {"status": "unready", "failures": ["name: error", ...]}` if any check raises or times out, else `200 {"status": "ok"}`. |
+
+Pass `None` for `live_path` / `ready_path` to skip that route. A check is any `async def` taking no arguments that raises on failure. If `checks` is given without `state`, the service is treated as already started.
+
 ## Correlation ID middleware
 
 The `CorrelationIdMiddleware` automatically attaches a correlation/request ID to every request, binding it into `structlog` contextvars so it propagates across `await` boundaries to all downstream code and logging.
