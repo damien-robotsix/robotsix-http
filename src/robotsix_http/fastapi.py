@@ -8,7 +8,8 @@ repeats by hand:
   (request validation, ``HTTPException``, :class:`DomainError`,
   :func:`external_http_error_handler`, and a catch-all for unhandled errors);
 * :func:`create_health_router`, a ``/health`` route factory returning
-  ``{"status": "ok"}``;
+  ``{"status": "ok"}``, optionally with liveness / startup / readiness
+  probes driven by a :class:`ProbeState` and named dependency checks;
 * :func:`create_chat_skill_router`, a ``/chat-skill`` route factory serving a
   validated ``text/markdown`` chat-access descriptor, plus
   :func:`assert_chat_skill_route_parity` to keep that descriptor in sync with
@@ -26,9 +27,10 @@ per-service migration tickets.
 
 from __future__ import annotations
 
+import asyncio
 import time
 import uuid
-from collections.abc import Callable, Sequence
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, cast
 
 import structlog
@@ -62,6 +64,8 @@ __all__ = [
     "ChatSkillFrontmatter",
     "CorrelationIdMiddleware",
     "DomainError",
+    "HealthCheck",
+    "ProbeState",
     "app_route_paths",
     "assert_chat_skill_route_parity",
     "create_chat_skill_router",
@@ -202,16 +206,130 @@ def register_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(Exception, unhandled_exception_handler)
 
 
-def create_health_router(path: str = "/health") -> APIRouter:
-    """Return an :class:`~fastapi.APIRouter` exposing a health-check route.
+HealthCheck = Callable[[], Awaitable[None]]
+"""A named dependency check: an async callable that raises on failure."""
 
-    The route responds to ``GET {path}`` with ``{"status": "ok"}``.
+
+class ProbeState:
+    """Lifecycle state shared by the liveness, startup and readiness probes.
+
+    A fresh instance is *starting* and not *shutting down*.  Call
+    :meth:`mark_started` once the service's lifespan startup has completed,
+    and :meth:`mark_shutting_down` from the SIGTERM / lifespan-shutdown
+    handler so orchestrators stop routing traffic before the process exits.
+    """
+
+    def __init__(self, *, started: bool = False) -> None:
+        self._started = started
+        self._shutting_down = False
+
+    @property
+    def started(self) -> bool:
+        """Whether :meth:`mark_started` has been called."""
+        return self._started
+
+    @property
+    def shutting_down(self) -> bool:
+        """Whether :meth:`mark_shutting_down` has been called."""
+        return self._shutting_down
+
+    def mark_started(self) -> None:
+        """Record that startup has completed."""
+        self._started = True
+
+    def mark_shutting_down(self) -> None:
+        """Record that the service is shutting down."""
+        self._shutting_down = True
+
+
+async def _run_check(name: str, check: HealthCheck, timeout_s: float) -> str | None:
+    """Run one check under *timeout_s*; return ``"name: error"`` on failure."""
+    try:
+        await asyncio.wait_for(check(), timeout=timeout_s)
+    except TimeoutError:
+        return f"{name}: timed out after {timeout_s}s"
+    except Exception as exc:  # every failure is reported, never raised
+        return f"{name}: {str(exc) or type(exc).__name__}"
+    return None
+
+
+def create_health_router(
+    path: str = "/health",
+    *,
+    live_path: str | None = "/health/live",
+    ready_path: str | None = "/health/ready",
+    startup_path: str | None = None,
+    checks: Mapping[str, HealthCheck] | None = None,
+    check_timeout_s: float = 2.0,
+    state: ProbeState | None = None,
+) -> APIRouter:
+    """Return an :class:`~fastapi.APIRouter` exposing health/probe routes.
+
+    ``GET {path}`` always responds with ``{"status": "ok"}``.  Called with
+    no probe arguments (neither *checks* nor *state*), only that route is
+    mounted — the historical, byte-compatible behaviour.
+
+    When *checks* or *state* is given, the probe routes are mounted too
+    (pass ``None`` for a path to skip that route):
+
+    * ``GET {live_path}`` (liveness) runs no dependency checks; it returns
+      ``200 {"status": "ok"}``, or ``503 {"status": "shutting_down"}`` once
+      :meth:`ProbeState.mark_shutting_down` has been called.
+    * ``GET {startup_path}`` (startup, off by default) returns
+      ``503 {"status": "starting"}`` until :meth:`ProbeState.mark_started`
+      has been called, then ``200 {"status": "ok"}``.
+    * ``GET {ready_path}`` (readiness) returns 503 ``starting`` /
+      ``shutting_down`` in those states; otherwise it runs every named check
+      concurrently, each under its own *check_timeout_s* timeout, and returns
+      ``503 {"status": "unready", "failures": ["name: error", ...]}`` if any
+      check raised or timed out, else ``200 {"status": "ok"}``.
+
+    If *checks* is given without *state*, a :class:`ProbeState` that is
+    already started is used, so readiness depends only on the checks.
     """
     router = APIRouter()
 
     @router.get(path)
     async def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    if checks is None and state is None:
+        return router
+
+    probe_state = state if state is not None else ProbeState(started=True)
+    named_checks = dict(checks or {})
+
+    if live_path is not None:
+
+        @router.get(live_path)
+        async def live() -> JSONResponse:
+            if probe_state.shutting_down:
+                return JSONResponse({"status": "shutting_down"}, status_code=503)
+            return JSONResponse({"status": "ok"})
+
+    if startup_path is not None:
+
+        @router.get(startup_path)
+        async def startup() -> JSONResponse:
+            if not probe_state.started:
+                return JSONResponse({"status": "starting"}, status_code=503)
+            return JSONResponse({"status": "ok"})
+
+    if ready_path is not None:
+
+        @router.get(ready_path)
+        async def ready() -> JSONResponse:
+            if probe_state.shutting_down:
+                return JSONResponse({"status": "shutting_down"}, status_code=503)
+            if not probe_state.started:
+                return JSONResponse({"status": "starting"}, status_code=503)
+            results = await asyncio.gather(
+                *(_run_check(name, check, check_timeout_s) for name, check in named_checks.items())
+            )
+            failures = [r for r in results if r is not None]
+            if failures:
+                return JSONResponse({"status": "unready", "failures": failures}, status_code=503)
+            return JSONResponse({"status": "ok"})
 
     return router
 

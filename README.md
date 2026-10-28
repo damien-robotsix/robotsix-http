@@ -300,6 +300,18 @@ The optional `robotsix_http.fastapi` submodule provides a canonical error envelo
 
 See **[docs/fastapi-bootstrap.md](docs/fastapi-bootstrap.md)** for the full guide: setup, the error envelope, the exception-handler suite, domain errors, health checks, correlation-ID middleware, and the chat-access descriptor with route-parity testing.
 
+### Health and probe routes
+
+`create_health_router()` mounts only `GET /health` → `200 {"status": "ok"}`. Pass a `ProbeState` (with `mark_started()` / `mark_shutting_down()`) and/or named async `checks` to add the probe routes:
+
+| Route | Default path | Responds |
+|---|---|---|
+| liveness | `/health/live` | `200 ok`; `503 shutting_down` once `mark_shutting_down()` is called. Runs no dependency checks. |
+| startup | off (`startup_path=None`) | `503 starting` until `mark_started()` is called, then `200 ok`. |
+| readiness | `/health/ready` | `503 starting` / `503 shutting_down` in those states. Otherwise runs all checks concurrently, each with its own `check_timeout_s` (default 2.0 s) timeout. Returns `503 {"status": "unready", "failures": ["name: error"]}` if any check fails, else `200 ok`. |
+
+See [docs/fastapi-bootstrap.md](docs/fastapi-bootstrap.md#liveness-startup-and-readiness-probes) for a lifespan example.
+
 ## Logging
 
 `robotsix_http` emits DEBUG records on the package loggers
