@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- towncrier release notes start -->
 
+## [0.9.0](https://github.com/damien-robotsix/robotsix-http/compare/v0.8.3...v0.9.0) (2026-10-28)
+
+
+### Features
+
+* robotsix-http: add liveness and dependency-probing readiness routes to the shared health router (one probe stack instead of three hand-rolled ones) (20261028T132759Z-robotsix-http-add-liveness-and-dependenc-5e7b) ([#164](https://github.com/damien-robotsix/robotsix-http/issues/164)) ([a77b6b1](https://github.com/damien-robotsix/robotsix-http/commit/a77b6b11e2e24f23421051e4388a9130eb2b93c5))
+
 ## [0.8.3](https://github.com/damien-robotsix/robotsix-http/compare/v0.8.2...v0.8.3) (2026-10-23)
 
 
