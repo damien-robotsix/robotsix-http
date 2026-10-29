@@ -36,7 +36,7 @@ dev = [
 ]
 
 [tool.uv.sources]
-robotsix-modules = { git = "https://github.com/damien-robotsix/robotsix-modules", rev = "7bb8157088dc8599c44b11803dbb83403bca8f98" }
+robotsix-modules = { git = "https://github.com/damien-robotsix/robotsix-modules", rev = "7579f6b26a36a55c20d5a6d4b0f0134750c3452d" }
 
 [tool.commitizen]
 name = "cz_conventional_commits"
