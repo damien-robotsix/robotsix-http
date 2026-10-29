@@ -18,7 +18,8 @@ jobs:
   ci:
     permissions:
       contents: read  # check out the repo to lint, type-check and test it
-    uses: damien-robotsix/robotsix-github-workflows/.github/workflows/python-ci.yml@2de56a85055b60d0f01c406342eda081e68c0c8b
+      security-events: write  # audit-sarif uploads the uv audit SARIF to code scanning
+    uses: damien-robotsix/robotsix-github-workflows/.github/workflows/python-ci.yml@86a722f2938c1dda343bbf8d3c5989613cbf1794  # v1.5.0
     with:
       python-version: "3.14"
       uv-version: "0.11.22"
@@ -26,7 +27,9 @@ jobs:
       coverage-threshold: "80"
       install-extras: ""
       run-deptry: true
-      run-audit: false
+      run-audit: true
+      audit-sarif: true
+      check-lock: true
       run-bandit: true
       bandit-severity: "medium"
       mypy-advisory: false
@@ -101,40 +104,3 @@ jobs:
           UV_PROJECT_ENVIRONMENT: system
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-
-  uv-audit:
-    name: UV Audit (SARIF)
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read  # check out the repo and read uv.lock
-      security-events: write  # upload the uv audit SARIF to code scanning
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v4
-        with:
-          persist-credentials: false
-
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
-        with:
-          python-version: "3.14"
-
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e  # v10.3.2
-        with:
-          version: "0.11.22"
-
-      - name: Install dependencies
-        run: uv sync --frozen
-        env:
-          UV_PROJECT_ENVIRONMENT: system
-          UV_MALWARE_CHECK: "1"
-
-      - name: Run uv audit
-        run: uv audit --frozen --output-format sarif > uv-audit-results.sarif
-        env:
-          UV_PROJECT_ENVIRONMENT: system
-
-      - name: Upload SARIF results
-        if: success() || failure()
-        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370  # v3
-        with:
-          sarif_file: uv-audit-results.sarif
-          category: uv-audit
