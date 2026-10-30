@@ -1,7 +1,20 @@
 # Security Policy
 
+## Supported Versions
+Only the latest minor release line receives security fixes. This table is
+updated at each release.
+
+| Version | Supported |
+| ------- | --------- |
+| 0.9.x   | yes       |
+| < 0.9   | no        |
+
 ## Reporting a Vulnerability
-Please report security vulnerabilities privately by email to admin@robotsix.net.
+Please report security vulnerabilities privately. The preferred channel is a
+GitHub private security advisory:
+https://github.com/damien-robotsix/robotsix-http/security/advisories/new
+
+You can also report by email to admin@robotsix.net.
 Do not open a public issue for security problems.
 
 ## Response Time
