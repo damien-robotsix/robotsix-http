@@ -4,6 +4,13 @@ Shared HTTP retry/backoff library for the robotsix ecosystem.
 
 Consumed from git via `uv.sources` — not published to a package index.
 
+## Documentation
+
+- **[docs/overview.md](docs/overview.md)** — architecture overview: module map, request lifecycle (`RetryClient` → retry loop → SSRF-guard transport), and the optional FastAPI extra.
+- **[docs/configuration.md](docs/configuration.md)** — consolidated configuration reference: every `RetryConfig` field, safety/allowlist options, `ProbeState` and health-check timeouts, and logger names.
+- **[docs/fastapi-bootstrap.md](docs/fastapi-bootstrap.md)** — FastAPI service-bootstrap guide.
+- **[docs/oauth2-persistence.md](docs/oauth2-persistence.md)** — OAuth2 token persistence guide.
+
 ## Installation
 
 Add a git source to your `pyproject.toml`:
