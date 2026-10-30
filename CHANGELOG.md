@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- towncrier release notes start -->
 
+## [0.9.1](https://github.com/damien-robotsix/robotsix-http/compare/v0.9.0...v0.9.1) (2026-10-30)
+
+
+### Documentation
+
+* Add docs/ architecture overview and consolidated configuration reference (20261030T040537Z-add-docs-architecture-overview-and-conso-43ac) ([#169](https://github.com/damien-robotsix/robotsix-http/issues/169)) ([4c313f6](https://github.com/damien-robotsix/robotsix-http/commit/4c313f6c048a8c7393813c1a51b587935594a991))
+
 ## [0.9.0](https://github.com/damien-robotsix/robotsix-http/compare/v0.8.3...v0.9.0) (2026-10-28)
 
 
