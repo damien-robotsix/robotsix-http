@@ -20,6 +20,8 @@ modules:
       - docs/modules.yaml
       - docs/oauth2-persistence.md
       - docs/fastapi-bootstrap.md
+      - docs/overview.md
+      - docs/configuration.md
       - pyproject.toml
       - src/robotsix_http/**
       - tests/core/**
