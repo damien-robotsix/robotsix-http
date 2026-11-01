@@ -40,6 +40,7 @@ jobs:
   gitleaks:
     name: Gitleaks (secret scan)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
@@ -75,6 +76,7 @@ jobs:
     name: Conventional Commits
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
