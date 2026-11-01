@@ -12,6 +12,7 @@ modules:
       - .gitignore
       - .pre-commit-config.yaml
       - .robotsix-mill/config.yaml
+      - .secrets.baseline
       - .robotsix-mill/periodic/**
       - AGENT.md
       - CHANGELOG.md

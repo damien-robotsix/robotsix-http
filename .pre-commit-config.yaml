@@ -9,15 +9,17 @@ repos:
       - id: check-added-large-files
       - id: check-merge-conflict
       - id: detect-private-key
-  - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.30.1
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
     hooks:
-      # Scans staged changes for leaked secrets (OAuth bearer/access/refresh
-      # tokens, client secrets, API keys) that detect-private-key's
-      # PEM/RSA/ECDSA-only matching cannot catch. Runs `gitleaks git
-      # --staged`; CI runs the full-history backstop since --no-verify can
-      # skip pre-commit hooks.
-      - id: gitleaks
+      # Scans staged changes for leaked secrets that detect-private-key's
+      # PEM/RSA/ECDSA-only matching cannot catch. CI runs TruffleHog through
+      # the shared python-security.yml since --no-verify can skip hooks.
+      - id: detect-secrets
+        args:
+          - '--baseline'
+          - '.secrets.baseline'
+        exclude: '\.secrets\.baseline$'
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.17.2
     hooks:
