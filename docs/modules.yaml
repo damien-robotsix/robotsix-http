@@ -10,6 +10,7 @@ modules:
       - .github/workflows/lint-workflows.yml
       - .github/workflows/release-please.yml
       - .gitignore
+      - .gitleaks.toml
       - .pre-commit-config.yaml
       - .robotsix-mill/config.yaml
       - .robotsix-mill/periodic/**
