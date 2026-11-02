@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- towncrier release notes start -->
 
+## [0.9.3](https://github.com/damien-robotsix/robotsix-http/compare/v0.9.2...v0.9.3) (2026-11-02)
+
+
+### Bug Fixes
+
+* CI failure: CI on main (20261102T091834Z-ci-failure-ci-on-main-c0b1) ([#182](https://github.com/damien-robotsix/robotsix-http/issues/182)) ([33eb4bf](https://github.com/damien-robotsix/robotsix-http/commit/33eb4bf81266f36f72984a31347d830b773c78ef))
+
 ## [0.9.2](https://github.com/damien-robotsix/robotsix-http/compare/v0.9.1...v0.9.2) (2026-10-30)
 
 
