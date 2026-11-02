@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- towncrier release notes start -->
 
+## [0.9.2](https://github.com/damien-robotsix/robotsix-http/compare/v0.9.1...v0.9.2) (2026-10-30)
+
+
+### Documentation
+
+* Expand SECURITY.md with a supported-versions table and private advisory reporting channel (20261030T155751Z-expand-security-md-with-a-supported-vers-ecb1) ([#173](https://github.com/damien-robotsix/robotsix-http/issues/173)) ([4f960f7](https://github.com/damien-robotsix/robotsix-http/commit/4f960f704d1a3bcf4b61d273d4e7b3d104c9d434))
+
 ## [0.9.1](https://github.com/damien-robotsix/robotsix-http/compare/v0.9.0...v0.9.1) (2026-10-30)
 
 
