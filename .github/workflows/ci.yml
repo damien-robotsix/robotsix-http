@@ -37,40 +37,17 @@ jobs:
       pytest-numprocesses: "auto"
       runs-on: "ubuntu-latest"
 
-  gitleaks:
-    name: Gitleaks (secret scan)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+  secret-scan:
     permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v4
-        with:
-          # Full history so the scan covers every commit, not just the tip.
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Install gitleaks
-        env:
-          # Keep in sync with the gitleaks `rev` in .pre-commit-config.yaml.
-          GITLEAKS_VERSION: "8.30.1"
-          # SHA-256 of gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz, taken from
-          # the release's gitleaks_${GITLEAKS_VERSION}_checksums.txt. Pinned here
-          # so verification does not trust a second download from the same origin.
-          GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
-        run: |
-          curl -sSfL \
-            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
-            -o gitleaks.tar.gz
-          echo "${GITLEAKS_SHA256}  gitleaks.tar.gz" | sha256sum -c -
-          tar -xzf gitleaks.tar.gz gitleaks
-          sudo install gitleaks /usr/local/bin/gitleaks
-          gitleaks version
-
-      - name: Scan full git history for secrets
-        # Non-bypassable backstop: pre-commit hooks can be skipped with
-        # `git commit --no-verify`, so CI re-scans the entire history.
-        run: gitleaks git . --redact --verbose
+      contents: read  # check out the repo for the TruffleHog secret scan
+    uses: damien-robotsix/robotsix-github-workflows/.github/workflows/python-security.yml@86a722f2938c1dda343bbf8d3c5989613cbf1794  # v1.5.0
+    with:
+      python-version: "3.14"
+      uv-version: "0.11.22"
+      install-extras: ""
+      trufflehog-pr-diff: true
+      trufflehog-extra-args: "--results=verified,unknown"
+      run-pip-audit: false  # python-ci v1.5.0 run-audit + audit-sarif already cover this
 
   commit-lint:
     name: Conventional Commits
