@@ -1,4 +1,4 @@
-"""Keep ``docs/configuration.md`` in sync with the code it documents.
+"""Keep ``docs/core/configuration.md`` in sync with the code it documents.
 
 The configuration reference restates field names and default values by
 hand.  These tests parse its markdown tables and compare them with the
@@ -20,7 +20,7 @@ import pytest
 
 from robotsix_http.retry import RetryConfig
 
-DOC_PATH = Path(__file__).resolve().parents[2] / "docs" / "configuration.md"
+DOC_PATH = Path(__file__).resolve().parents[2] / "docs" / "core" / "configuration.md"
 
 # Split table rows on ``|`` but not on an escaped ``\|`` (used in type columns).
 _CELL_SPLIT = re.compile(r"(?<!\\)\|")
