@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- towncrier release notes start -->
 
+## [0.9.4](https://github.com/damien-robotsix/robotsix-http/compare/v0.9.3...v0.9.4) (2026-11-04)
+
+
+### Documentation
+
+* Reorganize module core: align to per-module layout (src/docs/tests) (20261104T185904Z-reorganize-module-core-align-to-per-modu-628c) ([#185](https://github.com/damien-robotsix/robotsix-http/issues/185)) ([98b36ac](https://github.com/damien-robotsix/robotsix-http/commit/98b36ac0bb7ea01ba46790aedc46ff283de2f3f9))
+
 ## [0.9.3](https://github.com/damien-robotsix/robotsix-http/compare/v0.9.2...v0.9.3) (2026-11-02)
 
 
