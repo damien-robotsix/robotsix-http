@@ -10,8 +10,10 @@ modules:
       - .github/workflows/lint-workflows.yml
       - .github/workflows/release-please.yml
       - .gitignore
+      - .gitleaks.toml
       - .pre-commit-config.yaml
       - .robotsix-mill/config.yaml
+      - .secrets.baseline
       - .robotsix-mill/periodic/**
       - AGENT.md
       - CHANGELOG.md
@@ -21,10 +23,10 @@ modules:
       - README.md
       - SECURITY.md
       - docs/modules.yaml
-      - docs/oauth2-persistence.md
-      - docs/fastapi-bootstrap.md
-      - docs/overview.md
-      - docs/configuration.md
+      - docs/core/oauth2-persistence.md
+      - docs/core/fastapi-bootstrap.md
+      - docs/core/overview.md
+      - docs/core/configuration.md
       - pyproject.toml
       - src/robotsix_http/**
       - tests/core/**

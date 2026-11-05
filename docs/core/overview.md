@@ -3,7 +3,7 @@
 This page shows how the modules of `robotsix_http` fit together and what
 happens to a request on its way through the library. For every tunable
 default, see the [configuration reference](configuration.md). The
-[README](../README.md) still holds the per-feature deep-dives.
+[README](../../README.md) still holds the per-feature deep-dives.
 
 ## Module map
 

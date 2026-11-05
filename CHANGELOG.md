@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- towncrier release notes start -->
 
+## [0.9.4](https://github.com/damien-robotsix/robotsix-http/compare/v0.9.3...v0.9.4) (2026-11-04)
+
+
+### Documentation
+
+* Reorganize module core: align to per-module layout (src/docs/tests) (20261104T185904Z-reorganize-module-core-align-to-per-modu-628c) ([#185](https://github.com/damien-robotsix/robotsix-http/issues/185)) ([98b36ac](https://github.com/damien-robotsix/robotsix-http/commit/98b36ac0bb7ea01ba46790aedc46ff283de2f3f9))
+
+## [0.9.3](https://github.com/damien-robotsix/robotsix-http/compare/v0.9.2...v0.9.3) (2026-11-02)
+
+
+### Bug Fixes
+
+* CI failure: CI on main (20261102T091834Z-ci-failure-ci-on-main-c0b1) ([#182](https://github.com/damien-robotsix/robotsix-http/issues/182)) ([33eb4bf](https://github.com/damien-robotsix/robotsix-http/commit/33eb4bf81266f36f72984a31347d830b773c78ef))
+
+## [0.9.2](https://github.com/damien-robotsix/robotsix-http/compare/v0.9.1...v0.9.2) (2026-10-30)
+
+
+### Documentation
+
+* Expand SECURITY.md with a supported-versions table and private advisory reporting channel (20261030T155751Z-expand-security-md-with-a-supported-vers-ecb1) ([#173](https://github.com/damien-robotsix/robotsix-http/issues/173)) ([4f960f7](https://github.com/damien-robotsix/robotsix-http/commit/4f960f704d1a3bcf4b61d273d4e7b3d104c9d434))
+
 ## [0.9.1](https://github.com/damien-robotsix/robotsix-http/compare/v0.9.0...v0.9.1) (2026-10-30)
 
 

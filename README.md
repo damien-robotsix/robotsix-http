@@ -6,10 +6,10 @@ Consumed from git via `uv.sources` — not published to a package index.
 
 ## Documentation
 
-- **[docs/overview.md](docs/overview.md)** — architecture overview: module map, request lifecycle (`RetryClient` → retry loop → SSRF-guard transport), and the optional FastAPI extra.
-- **[docs/configuration.md](docs/configuration.md)** — consolidated configuration reference: every `RetryConfig` field, safety/allowlist options, `ProbeState` and health-check timeouts, and logger names.
-- **[docs/fastapi-bootstrap.md](docs/fastapi-bootstrap.md)** — FastAPI service-bootstrap guide.
-- **[docs/oauth2-persistence.md](docs/oauth2-persistence.md)** — OAuth2 token persistence guide.
+- **[docs/core/overview.md](docs/core/overview.md)** — architecture overview: module map, request lifecycle (`RetryClient` → retry loop → SSRF-guard transport), and the optional FastAPI extra.
+- **[docs/core/configuration.md](docs/core/configuration.md)** — consolidated configuration reference: every `RetryConfig` field, safety/allowlist options, `ProbeState` and health-check timeouts, and logger names.
+- **[docs/core/fastapi-bootstrap.md](docs/core/fastapi-bootstrap.md)** — FastAPI service-bootstrap guide.
+- **[docs/core/oauth2-persistence.md](docs/core/oauth2-persistence.md)** — OAuth2 token persistence guide.
 
 ## Installation
 
@@ -299,13 +299,13 @@ result = call_with_retry(my_function, is_transient_fn=my_transient_check)
 
 Several robotsix services (e.g. `robotsix-linkedin`, `robotsix-auto-mail`) persist OAuth2 credentials to disk with the same security posture: a `0600` secret file inside a `0700` parent directory, wrapped in a refresh-and-repersist lifecycle behind a zero-argument token-provider callable. The `robotsix_http.oauth` module extracts the provider-agnostic primitives (`write_secret_file`, `read_secret_file`, `SecureTokenStore`, `refresh_and_persist`, `build_token_provider`) so each consumer can layer its provider-specific serialization on top.
 
-See **[docs/oauth2-persistence.md](docs/oauth2-persistence.md)** for the full guide: secure file I/O, the token store, the refresh-and-repersist lifecycle, the token-provider factory, and a complete end-to-end example.
+See **[docs/core/oauth2-persistence.md](docs/core/oauth2-persistence.md)** for the full guide: secure file I/O, the token store, the refresh-and-repersist lifecycle, the token-provider factory, and a complete end-to-end example.
 
 ## FastAPI service bootstrap
 
 The optional `robotsix_http.fastapi` submodule provides a canonical error envelope, wired exception handlers, a health-check route factory, correlation-ID middleware, and a chat-access descriptor route — eliminating boilerplate duplication across services. Because `fastapi` is an optional dependency, the submodule is re-exported lazily (install the `fastapi` extra to use it).
 
-See **[docs/fastapi-bootstrap.md](docs/fastapi-bootstrap.md)** for the full guide: setup, the error envelope, the exception-handler suite, domain errors, health checks, correlation-ID middleware, and the chat-access descriptor with route-parity testing.
+See **[docs/core/fastapi-bootstrap.md](docs/core/fastapi-bootstrap.md)** for the full guide: setup, the error envelope, the exception-handler suite, domain errors, health checks, correlation-ID middleware, and the chat-access descriptor with route-parity testing.
 
 ### Health and probe routes
 
@@ -317,7 +317,7 @@ See **[docs/fastapi-bootstrap.md](docs/fastapi-bootstrap.md)** for the full guid
 | startup | off (`startup_path=None`) | `503 starting` until `mark_started()` is called, then `200 ok`. |
 | readiness | `/health/ready` | `503 starting` / `503 shutting_down` in those states. Otherwise runs all checks concurrently, each with its own `check_timeout_s` (default 2.0 s) timeout. Returns `503 {"status": "unready", "failures": ["name: error"]}` if any check fails, else `200 ok`. |
 
-See [docs/fastapi-bootstrap.md](docs/fastapi-bootstrap.md#liveness-startup-and-readiness-probes) for a lifespan example.
+See [docs/core/fastapi-bootstrap.md](docs/core/fastapi-bootstrap.md#liveness-startup-and-readiness-probes) for a lifespan example.
 
 ## Logging
 
