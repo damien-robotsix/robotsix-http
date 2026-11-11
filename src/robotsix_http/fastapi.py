@@ -426,7 +426,7 @@ class CorrelationIdMiddleware:
                 MutableHeaders(raw=message["headers"])[response_header] = correlation_id
             await send(message)
 
-        bind_contextvars(**{field: correlation_id for field in self._context_fields})
+        bind_contextvars(**dict.fromkeys(self._context_fields, correlation_id))
         start = time.perf_counter()
         if self._log_requests:
             self._logger.info(
