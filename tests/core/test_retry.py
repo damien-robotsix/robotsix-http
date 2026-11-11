@@ -357,7 +357,7 @@ class TestComputeBackoff:
 
 
 # ---------------------------------------------------------------------------
-# call_with_retry (sync)
+# Tests for call_with_retry, sync variant
 # ---------------------------------------------------------------------------
 
 
@@ -688,7 +688,8 @@ class TestCallWithRetryInsideRunningLoop:
             return "ok"
 
         assert call_with_retry(fn) == "ok"
-        assert seen and seen[0] != caller_thread
+        assert seen
+        assert seen[0] != caller_thread
 
     async def test_retry_then_success(self) -> None:
         call_count = 0

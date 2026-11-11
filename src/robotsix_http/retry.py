@@ -322,7 +322,7 @@ async def _invoke[T](f: Callable[..., T]) -> T:
     """Call *f* and ``await`` the result when it is awaitable."""
     result = f()
     if inspect.isawaitable(result):
-        return await result  # type: ignore
+        return await result  # type: ignore[no-any-return]
     return result
 
 
