@@ -1,9 +1,0 @@
-# gitleaks configuration — used by the CI "Gitleaks (secret scan)" job and the
-# gitleaks pre-commit hook (both pick up .gitleaks.toml from the repo root).
-[extend]
-# Keep every built-in gitleaks rule; only add the allowlist below.
-useDefault = true
-
-[[allowlists]]
-description = "detect-secrets baseline stores SHA-1 hashes of audited values, not secrets"
-paths = ['''(^|/)\.secrets\.baseline$''']
