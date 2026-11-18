@@ -303,7 +303,7 @@ See **[docs/core/oauth2-persistence.md](docs/core/oauth2-persistence.md)** for t
 
 ## FastAPI service bootstrap
 
-The optional `robotsix_http.fastapi` submodule provides a canonical error envelope, wired exception handlers, a health-check route factory, correlation-ID middleware, and a chat-access descriptor route — eliminating boilerplate duplication across services. Because `fastapi` is an optional dependency, the submodule is re-exported lazily (install the `fastapi` extra to use it).
+The optional `robotsix_http.fastapi` submodule provides a canonical error envelope, wired exception handlers, a health-check route factory, correlation-ID middleware, a chat-access descriptor route, and a versioned config-endpoint factory — eliminating boilerplate duplication across services. Because `fastapi` is an optional dependency, the submodule is re-exported lazily (install the `fastapi` extra to use it).
 
 See **[docs/core/fastapi-bootstrap.md](docs/core/fastapi-bootstrap.md)** for the full guide: setup, the error envelope, the exception-handler suite, domain errors, health checks, correlation-ID middleware, and the chat-access descriptor with route-parity testing.
 
@@ -318,6 +318,20 @@ See **[docs/core/fastapi-bootstrap.md](docs/core/fastapi-bootstrap.md)** for the
 | readiness | `/health/ready` | `503 starting` / `503 shutting_down` in those states. Otherwise runs all checks concurrently, each with its own `check_timeout_s` (default 2.0 s) timeout. Returns `503 {"status": "unready", "failures": ["name: error"]}` if any check fails, else `200 ok`. |
 
 See [docs/core/fastapi-bootstrap.md](docs/core/fastapi-bootstrap.md#liveness-startup-and-readiness-probes) for a lifespan example.
+
+### Config endpoint family
+
+`create_config_router()` mounts the versioned config endpoint family every robotsix service repeats by hand — `GET`/`PUT /config`, `GET /config/versions`, and `POST /config/rollback` — against a pluggable `ConfigStore`. Wire it up in one line:
+
+```python
+from fastapi import FastAPI
+from robotsix_http.fastapi import create_config_router
+
+app = FastAPI()
+app.include_router(create_config_router(my_config_store))
+```
+
+`ConfigStore` is a `Protocol` whose synchronous `get` / `put` / `versions` / `rollback` methods own where the config and its version history live (a file, a database, in-memory, ...). An unknown `version_id` in a rollback raises `ConfigVersionNotFoundError`, which the factory renders as a `404`. See [docs/core/fastapi-bootstrap.md](docs/core/fastapi-bootstrap.md#config-endpoint-family) for full details and custom path mounting.
 
 ## Logging
 

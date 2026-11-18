@@ -13,7 +13,10 @@ repeats by hand:
 * :func:`create_chat_skill_router`, a ``/chat-skill`` route factory serving a
   validated ``text/markdown`` chat-access descriptor, plus
   :func:`assert_chat_skill_route_parity` to keep that descriptor in sync with
-  the app's real routes.
+  the app's real routes;
+* :func:`create_config_router`, a config endpoint factory serving the
+  versioned ``GET/PUT /config``, ``GET /config/versions`` and
+  ``POST /config/rollback`` family against a pluggable :class:`ConfigStore`.
 
 Importing :mod:`robotsix_http` does **not** import this submodule, so
 ``fastapi`` stays an *optional* dependency — install it with the
@@ -50,6 +53,12 @@ from robotsix_http._chat_skill import (
     documented_routes,
     parse_chat_skill_frontmatter,
 )
+from robotsix_http._config import (
+    ConfigStore,
+    ConfigVersion,
+    ConfigVersionNotFoundError,
+    create_config_router,
+)
 from robotsix_http.client import (
     ExternalAuthError,
     ExternalHTTPError,
@@ -62,6 +71,9 @@ if TYPE_CHECKING:
 
 __all__ = [
     "ChatSkillFrontmatter",
+    "ConfigStore",
+    "ConfigVersion",
+    "ConfigVersionNotFoundError",
     "CorrelationIdMiddleware",
     "DomainError",
     "HealthCheck",
@@ -69,6 +81,7 @@ __all__ = [
     "app_route_paths",
     "assert_chat_skill_route_parity",
     "create_chat_skill_router",
+    "create_config_router",
     "create_correlation_id_middleware",
     "create_health_router",
     "documented_routes",
