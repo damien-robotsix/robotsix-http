@@ -214,3 +214,51 @@ def test_chat_skill_routes_match_api():
 ```python
 assert_chat_skill_route_parity(app, CHAT_SKILL, ignore={"/metrics", "/admin"})
 ```
+
+## Config endpoint family
+
+Many robotsix services hand-roll the same versioned config endpoint family against a local backing store. `create_config_router()` serves all of it from a single factory, backed by a pluggable `ConfigStore` — mirroring the `create_health_router` factory style.
+
+The factory mounts four routes:
+
+| Route | Behaviour |
+|---|---|
+| `GET /config` | Returns the current config from `store.get()`. |
+| `PUT /config` | Replaces the config with the JSON request body (`store.put`), recording a version snapshot, and returns the stored config. |
+| `GET /config/versions` | Returns `{"versions": [...]}` from `store.versions()`. |
+| `POST /config/rollback` | Body `{"version_id": "..."}`; restores that version (`store.rollback`) and returns the restored config. An unknown `version_id` responds `404`. |
+
+Wire it up with a store of your choice:
+
+```python
+from fastapi import FastAPI
+from robotsix_http.fastapi import create_config_router
+
+
+class FileConfigStore:
+    """A minimal example store — implement get/put/versions/rollback over any backend."""
+
+    def get(self): ...
+    def put(self, config): ...
+    def versions(self): ...
+    def rollback(self, version_id): ...
+
+
+app = FastAPI()
+app.include_router(create_config_router(FileConfigStore()))
+```
+
+`ConfigStore` is a `Protocol` with four synchronous methods (`get`, `put`, `versions`, `rollback`). `put` returns the newly stored config, `versions` returns a `Sequence[ConfigVersion]` snapshot history, and `rollback(version_id)` restores a snapshot — raising `ConfigVersionNotFoundError` when the id is unknown (the factory translates that into a `404`). The methods are intentionally synchronous so any transport can be wrapped; callers that need async I/O should implement the store over their own executor/async client.
+
+The paths are keyword-only and default to the standard `/config` family. Pass alternatives to mount them elsewhere:
+
+```python
+app.include_router(
+    create_config_router(
+        store,
+        path="/settings",
+        versions_path="/settings/history",
+        rollback_path="/settings/revert",
+    )
+)
+```

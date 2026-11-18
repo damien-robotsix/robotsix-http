@@ -106,6 +106,21 @@ Other FastAPI-side defaults:
 | | `name` | `None` (when set, must match the descriptor's frontmatter `name`) |
 | `assert_chat_skill_route_parity` | ignored routes | `/health`, `/chat-skill` |
 
+### FastAPI config router (`create_config_router`)
+
+Available only with the `robotsix-http[fastapi]` extra.
+
+`create_config_router(store, *, ...)` parameters:
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `store` | — | The pluggable `ConfigStore` backing the routes (positional). |
+| `path` | `"/config"` | `GET`/`PUT` route returning/updating the current config. |
+| `versions_path` | `"/config/versions"` | `GET` route listing the config version history (`{"versions": [...]}`). |
+| `rollback_path` | `"/config/rollback"` | `POST` route restoring a stored version (`{"version_id": "..."}`). |
+
+A `ConfigStore` is a `Protocol` with the synchronous methods `get()`, `put(config)`, `versions()` and `rollback(version_id)`. `rollback` raises `ConfigVersionNotFoundError` for an unknown id, which the factory maps to a `404`; a `POST /config/rollback` body missing `version_id` responds `422` via normal FastAPI validation.
+
 ## Logger names
 
 | Logger | Library | Emits |
