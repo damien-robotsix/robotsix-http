@@ -63,25 +63,25 @@ class ConfigStore(Protocol):
 
     def get(self) -> dict[str, Any]:
         """Return the current config as a JSON-serialisable dict."""
-        ...
+        pass
 
     def put(self, config: Mapping[str, Any]) -> dict[str, Any]:
         """Replace the config and record a new version snapshot.
 
         Returns the newly stored config as a JSON-serialisable dict.
         """
-        ...
+        pass
 
     def versions(self) -> Sequence[ConfigVersion]:
         """Return the config version history, newest last (or first)."""
-        ...
+        pass
 
     def rollback(self, version_id: str) -> dict[str, Any]:
         """Roll the config back to *version_id* and return the restored config.
 
         :raises ConfigVersionNotFoundError: if *version_id* is unknown.
         """
-        ...
+        pass
 
 
 class _RollbackRequest(BaseModel):
