@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- towncrier release notes start -->
 
+## [0.9.5](https://github.com/damien-robotsix/robotsix-http/compare/v0.9.4...v0.9.5) (2026-11-21)
+
+
+### Bug Fixes
+
+* robotsix-http: bump opentelemetry-api to &gt;=1.45.2 (uv.lock) to clear the base-branch CI advisory blocking the config-router extraction (20261121T081657Z-robotsix-http-bump-opentelemetry-api-to-49d4) ([#197](https://github.com/damien-robotsix/robotsix-http/issues/197)) ([eac2d63](https://github.com/damien-robotsix/robotsix-http/commit/eac2d63879c521348e1ac1b628ed8976518abf35))
+
 ## [0.9.4](https://github.com/damien-robotsix/robotsix-http/compare/v0.9.3...v0.9.4) (2026-11-04)
 
 
