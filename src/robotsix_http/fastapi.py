@@ -319,6 +319,14 @@ def create_health_router(
 
         @router.get(ready_path)
         async def ready() -> JSONResponse:
+            """Serve the readiness probe endpoint.
+
+            Returns ``200 {"status": "ok"}`` when the app is not shutting
+            down and (for a started :class:`ProbeState`) after all named
+            checks pass; otherwise returns 503 with a status of
+            ``"shutting_down"``, ``"starting"``, or ``"unready"`` — the
+            latter carrying a ``failures`` list.
+            """
             if probe_state.shutting_down:
                 return JSONResponse({"status": "shutting_down"}, status_code=503)
             if not probe_state.started:
