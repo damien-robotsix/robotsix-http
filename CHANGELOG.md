@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- towncrier release notes start -->
 
+## [0.9.6](https://github.com/damien-robotsix/robotsix-http/compare/v0.9.5...v0.9.6) (2026-11-27)
+
+
+### Documentation
+
+* docstring gap: add docstring to ready in src/robotsix_http/fastapi.py:321 (20261127T041401Z-docstring-gap-add-docstring-to-ready-in-2bdf) ([#201](https://github.com/damien-robotsix/robotsix-http/issues/201)) ([ad68548](https://github.com/damien-robotsix/robotsix-http/commit/ad68548740b9cb1eef9f7cebbe0aed6729190be8))
+
 ## [0.9.5](https://github.com/damien-robotsix/robotsix-http/compare/v0.9.4...v0.9.5) (2026-11-21)
 
 
