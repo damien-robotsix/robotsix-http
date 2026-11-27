@@ -25,6 +25,7 @@ from robotsix_http import (
 )
 from robotsix_http.client import ExternalHTTPError
 from robotsix_http.fastapi import (
+    _EXTERNAL_ERROR_MAP,
     ChatSkillFrontmatter,
     DomainError,
     app_route_paths,
@@ -181,6 +182,34 @@ async def test_external_base_error_falls_through() -> None:
     response = await external_http_error_handler(_request(), exc)
     assert response.status_code == 502
     assert _body(response)["error"]["code"] == "upstream_error"
+
+
+# ---------------------------------------------------------------------------
+# ExternalHTTPError taxonomy ↔ _EXTERNAL_ERROR_MAP coherence
+# ---------------------------------------------------------------------------
+
+
+def test_external_error_map_covers_every_client_subclass() -> None:
+    """Every ``ExternalHTTPError`` subclass in client.py must be mapped here.
+
+    ``client._map_exception`` and ``fastapi._EXTERNAL_ERROR_MAP`` are
+    maintained by hand in lockstep.  Adding a subclass to client.py without
+    mapping it in fastapi.py silently falls through to the generic
+    502/"upstream_error"; removing one leaves a dead map entry.  Asserting
+    that the two sets are equal forces a conscious mapping decision at either
+    site (or an explicit allowlist, should an intentional fallback exist).
+    """
+    from robotsix_http import client as client_module
+
+    subclass_set = {
+        member
+        for member in vars(client_module).values()
+        if isinstance(member, type)
+        and issubclass(member, ExternalHTTPError)
+        and member is not ExternalHTTPError
+    }
+    mapped_set = {exc_type for exc_type, _status, _code in _EXTERNAL_ERROR_MAP}
+    assert subclass_set == mapped_set
 
 
 async def test_unhandled_exception_handler() -> None:
