@@ -95,28 +95,20 @@ class TestParseRetryAfterRegression:
 
 
 class TestIsRetryableForMethod:
-    def test_get_retries_on_503(self) -> None:
-        request = httpx.Request("GET", "http://example.com")
-        response = httpx.Response(503, request=request)
-        exc = httpx.HTTPStatusError("boom", request=request, response=response)
+    def test_get_retries_on_503(self, httpx_status_error) -> None:
+        exc = httpx_status_error(503)
         assert _is_retryable_for_method("GET", exc) is True
 
-    def test_get_retries_on_429(self) -> None:
-        request = httpx.Request("GET", "http://example.com")
-        response = httpx.Response(429, request=request)
-        exc = httpx.HTTPStatusError("boom", request=request, response=response)
+    def test_get_retries_on_429(self, httpx_status_error) -> None:
+        exc = httpx_status_error(429)
         assert _is_retryable_for_method("GET", exc) is True
 
-    def test_post_does_not_retry_on_503(self) -> None:
-        request = httpx.Request("POST", "http://example.com")
-        response = httpx.Response(503, request=request)
-        exc = httpx.HTTPStatusError("boom", request=request, response=response)
+    def test_post_does_not_retry_on_503(self, httpx_status_error) -> None:
+        exc = httpx_status_error(503, method="POST")
         assert _is_retryable_for_method("POST", exc) is False
 
-    def test_post_does_not_retry_on_429(self) -> None:
-        request = httpx.Request("POST", "http://example.com")
-        response = httpx.Response(429, request=request)
-        exc = httpx.HTTPStatusError("boom", request=request, response=response)
+    def test_post_does_not_retry_on_429(self, httpx_status_error) -> None:
+        exc = httpx_status_error(429, method="POST")
         assert _is_retryable_for_method("POST", exc) is False
 
     def test_post_retries_on_connect_error(self) -> None:
@@ -157,49 +149,35 @@ class TestIsRetryableForMethod:
         exc = httpx.ReadTimeout("read timed out")
         assert _is_retryable_for_method("GET", exc) is True
 
-    def test_patch_does_not_retry_on_503(self) -> None:
-        request = httpx.Request("PATCH", "http://example.com")
-        response = httpx.Response(503, request=request)
-        exc = httpx.HTTPStatusError("boom", request=request, response=response)
+    def test_patch_does_not_retry_on_503(self, httpx_status_error) -> None:
+        exc = httpx_status_error(503, method="PATCH")
         assert _is_retryable_for_method("PATCH", exc) is False
 
-    def test_delete_retries_on_503(self) -> None:
-        request = httpx.Request("DELETE", "http://example.com")
-        response = httpx.Response(503, request=request)
-        exc = httpx.HTTPStatusError("boom", request=request, response=response)
+    def test_delete_retries_on_503(self, httpx_status_error) -> None:
+        exc = httpx_status_error(503, method="DELETE")
         assert _is_retryable_for_method("DELETE", exc) is True
 
-    def test_put_retries_on_503(self) -> None:
-        request = httpx.Request("PUT", "http://example.com")
-        response = httpx.Response(503, request=request)
-        exc = httpx.HTTPStatusError("boom", request=request, response=response)
+    def test_put_retries_on_503(self, httpx_status_error) -> None:
+        exc = httpx_status_error(503, method="PUT")
         assert _is_retryable_for_method("PUT", exc) is True
 
-    def test_head_retries_on_503(self) -> None:
-        request = httpx.Request("HEAD", "http://example.com")
-        response = httpx.Response(503, request=request)
-        exc = httpx.HTTPStatusError("boom", request=request, response=response)
+    def test_head_retries_on_503(self, httpx_status_error) -> None:
+        exc = httpx_status_error(503, method="HEAD")
         assert _is_retryable_for_method("HEAD", exc) is True
 
-    def test_options_retries_on_503(self) -> None:
-        request = httpx.Request("OPTIONS", "http://example.com")
-        response = httpx.Response(503, request=request)
-        exc = httpx.HTTPStatusError("boom", request=request, response=response)
+    def test_options_retries_on_503(self, httpx_status_error) -> None:
+        exc = httpx_status_error(503, method="OPTIONS")
         assert _is_retryable_for_method("OPTIONS", exc) is True
 
     def test_post_non_transient(self) -> None:
         assert _is_retryable_for_method("POST", ValueError("nope")) is False
 
-    def test_408_not_transient_by_default_for_get(self) -> None:
-        request = httpx.Request("GET", "http://example.com")
-        response = httpx.Response(408, request=request)
-        exc = httpx.HTTPStatusError("boom", request=request, response=response)
+    def test_408_not_transient_by_default_for_get(self, httpx_status_error) -> None:
+        exc = httpx_status_error(408)
         assert _is_retryable_for_method("GET", exc) is False
 
-    def test_get_retries_408_with_custom_predicate(self) -> None:
-        request = httpx.Request("GET", "http://example.com")
-        response = httpx.Response(408, request=request)
-        exc = httpx.HTTPStatusError("boom", request=request, response=response)
+    def test_get_retries_408_with_custom_predicate(self, httpx_status_error) -> None:
+        exc = httpx_status_error(408)
         assert _is_retryable_for_method("GET", exc, _is_408) is True
 
     def test_custom_predicate_classifies_domain_exception(self) -> None:
@@ -222,43 +200,33 @@ class TestIsRetryableForMethod:
 
 
 class TestMapException:
-    def test_401_maps_to_auth_error(self) -> None:
-        request = httpx.Request("GET", "http://example.com")
-        response = httpx.Response(401, request=request)
-        exc = httpx.HTTPStatusError("unauthorized", request=request, response=response)
+    def test_401_maps_to_auth_error(self, httpx_status_error) -> None:
+        exc = httpx_status_error(401, msg="unauthorized")
         mapped = _map_exception(exc)
         assert isinstance(mapped, ExternalAuthError)
         assert mapped.status_code == 401
-        assert mapped.response is response
+        assert mapped.response is exc.response
 
-    def test_403_maps_to_auth_error(self) -> None:
-        request = httpx.Request("GET", "http://example.com")
-        response = httpx.Response(403, request=request)
-        exc = httpx.HTTPStatusError("forbidden", request=request, response=response)
+    def test_403_maps_to_auth_error(self, httpx_status_error) -> None:
+        exc = httpx_status_error(403, msg="forbidden")
         mapped = _map_exception(exc)
         assert isinstance(mapped, ExternalAuthError)
         assert mapped.status_code == 403
 
-    def test_429_maps_to_rate_limit_error(self) -> None:
-        request = httpx.Request("GET", "http://example.com")
-        response = httpx.Response(429, request=request)
-        exc = httpx.HTTPStatusError("rate limited", request=request, response=response)
+    def test_429_maps_to_rate_limit_error(self, httpx_status_error) -> None:
+        exc = httpx_status_error(429, msg="rate limited")
         mapped = _map_exception(exc)
         assert isinstance(mapped, ExternalRateLimitError)
         assert mapped.status_code == 429
 
-    def test_500_maps_to_service_error(self) -> None:
-        request = httpx.Request("GET", "http://example.com")
-        response = httpx.Response(500, request=request)
-        exc = httpx.HTTPStatusError("internal error", request=request, response=response)
+    def test_500_maps_to_service_error(self, httpx_status_error) -> None:
+        exc = httpx_status_error(500, msg="internal error")
         mapped = _map_exception(exc)
         assert isinstance(mapped, ExternalServiceError)
         assert mapped.status_code == 500
 
-    def test_502_maps_to_service_error(self) -> None:
-        request = httpx.Request("GET", "http://example.com")
-        response = httpx.Response(502, request=request)
-        exc = httpx.HTTPStatusError("bad gateway", request=request, response=response)
+    def test_502_maps_to_service_error(self, httpx_status_error) -> None:
+        exc = httpx_status_error(502, msg="bad gateway")
         mapped = _map_exception(exc)
         assert isinstance(mapped, ExternalServiceError)
         assert mapped.status_code == 502
@@ -267,10 +235,8 @@ class TestMapException:
         exc = ValueError("not http")
         assert _map_exception(exc) is exc
 
-    def test_400_not_mapped(self) -> None:
-        request = httpx.Request("GET", "http://example.com")
-        response = httpx.Response(400, request=request)
-        exc = httpx.HTTPStatusError("bad request", request=request, response=response)
+    def test_400_not_mapped(self, httpx_status_error) -> None:
+        exc = httpx_status_error(400, msg="bad request")
         mapped = _map_exception(exc)
         # 400 is not mapped — returned as-is.
         assert mapped is exc

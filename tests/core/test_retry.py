@@ -71,17 +71,13 @@ class TestStatus:
         exc.status_code = 429  # type: ignore[attr-defined]
         assert _status(exc) == 429
 
-    def test_httpx_response_status_code(self) -> None:
-        request = httpx.Request("GET", "http://example.com")
-        response = httpx.Response(503, request=request)
-        exc = httpx.HTTPStatusError("boom", request=request, response=response)
+    def test_httpx_response_status_code(self, httpx_status_error) -> None:
+        exc = httpx_status_error(503)
         assert _status(exc) == 503
 
-    def test_response_status_fallback(self) -> None:
-        request = httpx.Request("GET", "http://example.com")
-        response = httpx.Response(500, request=request)
+    def test_response_status_fallback(self, httpx_status_error) -> None:
         # Remove status_code to force .status fallback
-        exc = httpx.HTTPStatusError("boom", request=request, response=response)
+        exc = httpx_status_error(500)
         assert _status(exc) == 500
 
     def test_no_status(self) -> None:
@@ -111,46 +107,32 @@ class TestIsTransient:
     def test_json_decode_error(self) -> None:
         assert is_transient(json.JSONDecodeError("bad json", "", 0)) is True
 
-    def test_http_429(self) -> None:
-        request = httpx.Request("GET", "http://example.com")
-        response = httpx.Response(429, request=request)
-        exc = httpx.HTTPStatusError("rate limited", request=request, response=response)
+    def test_http_429(self, httpx_status_error) -> None:
+        exc = httpx_status_error(429, msg="rate limited")
         assert is_transient(exc) is True
 
-    def test_http_500(self) -> None:
-        request = httpx.Request("GET", "http://example.com")
-        response = httpx.Response(500, request=request)
-        exc = httpx.HTTPStatusError("server error", request=request, response=response)
+    def test_http_500(self, httpx_status_error) -> None:
+        exc = httpx_status_error(500, msg="server error")
         assert is_transient(exc) is True
 
-    def test_http_502(self) -> None:
-        request = httpx.Request("GET", "http://example.com")
-        response = httpx.Response(502, request=request)
-        exc = httpx.HTTPStatusError("bad gateway", request=request, response=response)
+    def test_http_502(self, httpx_status_error) -> None:
+        exc = httpx_status_error(502, msg="bad gateway")
         assert is_transient(exc) is True
 
-    def test_http_503(self) -> None:
-        request = httpx.Request("GET", "http://example.com")
-        response = httpx.Response(503, request=request)
-        exc = httpx.HTTPStatusError("unavailable", request=request, response=response)
+    def test_http_503(self, httpx_status_error) -> None:
+        exc = httpx_status_error(503, msg="unavailable")
         assert is_transient(exc) is True
 
-    def test_http_400_not_transient(self) -> None:
-        request = httpx.Request("GET", "http://example.com")
-        response = httpx.Response(400, request=request)
-        exc = httpx.HTTPStatusError("bad request", request=request, response=response)
+    def test_http_400_not_transient(self, httpx_status_error) -> None:
+        exc = httpx_status_error(400, msg="bad request")
         assert is_transient(exc) is False
 
-    def test_http_404_not_transient(self) -> None:
-        request = httpx.Request("GET", "http://example.com")
-        response = httpx.Response(404, request=request)
-        exc = httpx.HTTPStatusError("not found", request=request, response=response)
+    def test_http_404_not_transient(self, httpx_status_error) -> None:
+        exc = httpx_status_error(404, msg="not found")
         assert is_transient(exc) is False
 
-    def test_cause_chain_transient(self) -> None:
-        request = httpx.Request("GET", "http://example.com")
-        response = httpx.Response(503, request=request)
-        inner = httpx.HTTPStatusError("inner", request=request, response=response)
+    def test_cause_chain_transient(self, httpx_status_error) -> None:
+        inner = httpx_status_error(503, msg="inner")
         outer = RuntimeError("wrapper")
         outer.__cause__ = inner
         assert is_transient(outer) is True
@@ -369,18 +351,14 @@ class TestCallWithRetrySync:
         result = call_with_retry(fn)
         assert result == "ok"
 
-    def test_retry_then_success(self) -> None:
+    def test_retry_then_success(self, httpx_status_error) -> None:
         call_count = 0
 
         def fn() -> str:
             nonlocal call_count
             call_count += 1
             if call_count < 3:
-                raise httpx.HTTPStatusError(
-                    "boom",
-                    request=httpx.Request("GET", "http://x"),
-                    response=httpx.Response(503, request=httpx.Request("GET", "http://x")),
-                )
+                raise httpx_status_error(503)
             return "ok"
 
         result = call_with_retry(fn, config=RetryConfig(jitter_factor=0.0))
@@ -691,18 +669,14 @@ class TestCallWithRetryInsideRunningLoop:
         assert seen
         assert seen[0] != caller_thread
 
-    async def test_retry_then_success(self) -> None:
+    async def test_retry_then_success(self, httpx_status_error) -> None:
         call_count = 0
 
         def fn() -> str:
             nonlocal call_count
             call_count += 1
             if call_count < 3:
-                raise httpx.HTTPStatusError(
-                    "boom",
-                    request=httpx.Request("GET", "http://x"),
-                    response=httpx.Response(503, request=httpx.Request("GET", "http://x")),
-                )
+                raise httpx_status_error(503)
             return "ok"
 
         result = call_with_retry(fn, config=RetryConfig(jitter_factor=0.0))
@@ -730,18 +704,14 @@ class TestACallWithRetry:
         result = await acall_with_retry(fn)
         assert result == "ok"
 
-    async def test_retry_then_success(self) -> None:
+    async def test_retry_then_success(self, httpx_status_error) -> None:
         call_count = 0
 
         async def fn() -> str:
             nonlocal call_count
             call_count += 1
             if call_count < 3:
-                raise httpx.HTTPStatusError(
-                    "boom",
-                    request=httpx.Request("GET", "http://x"),
-                    response=httpx.Response(503, request=httpx.Request("GET", "http://x")),
-                )
+                raise httpx_status_error(503)
             return "ok"
 
         result = await acall_with_retry(fn, config=RetryConfig(jitter_factor=0.0))
