@@ -310,3 +310,65 @@ def test_logger_names_table_matches_modules() -> None:
     fastapi_source = (SRC_DIR / "fastapi.py").read_text(encoding="utf-8")
     for name in structlog_names:
         assert f'structlog.get_logger("{name}")' in fastapi_source
+
+
+# --- README public-API surface ----------------------------------------------
+
+README_PATH = REPO_ROOT / "README.md"
+
+
+def _readme_section_after(heading: str) -> str:
+    """Return the body of the ``##``-level README section starting at *heading*."""
+    lines = README_PATH.read_text(encoding="utf-8").splitlines()
+    start = next(i for i, line in enumerate(lines) if line.strip() == heading)
+    section: list[str] = []
+    for line in lines[start + 1 :]:
+        if line.startswith("## "):
+            break
+        section.append(line)
+    return "\n".join(section)
+
+
+def _readme_api_identifiers() -> set[str]:
+    """Backticked, identifier-shaped names in the README ``## API overview``
+    section that the package actually provides.
+
+    Only spans that are a single plain identifier are collected (dotted paths
+    such as ``httpx.AsyncClient``, calls like ``guarded_async_client()`` and
+    prose tokens such as ``Retry-After`` are ignored), and only when they
+    resolve in the ``robotsix_http`` namespace (dunder names such as
+    ``__all__`` are ignored).
+    """
+    section = _readme_section_after("## API overview")
+    return {
+        span
+        for span in _CODE_SPAN.findall(section)
+        if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", span)
+        and not span.startswith("__")
+        and hasattr(robotsix_http, span)
+    }
+
+
+def test_readme_documents_every_public_export() -> None:
+    """Every name in ``robotsix_http.__all__`` appears in the README
+    ``## API overview`` section (the API table plus ``### Exception
+    hierarchy``).  An export added to ``__all__`` without a README row fails
+    this test (regressions: the safety exports, ``compute_backoff``)."""
+    section = _readme_section_after("## API overview")
+    missing = [
+        name
+        for name in robotsix_http.__all__
+        if not re.search(rf"(?<![A-Za-z0-9_]){re.escape(name)}(?![A-Za-z0-9_])", section)
+    ]
+    assert not missing, f"README API overview omits: {sorted(missing)}"
+
+
+def test_readme_api_identifiers_belong_to_public_api() -> None:
+    """Every backticked API identifier in the README ``## API overview``
+    section is a member of ``robotsix_http.__all__``.
+
+    Informational direction: an export removed from ``__all__`` but still
+    documented in the README fails this test.  Exception-hierarchy names are
+    covered by the presence assertion above."""
+    non_public = sorted(_readme_api_identifiers() - set(robotsix_http.__all__))
+    assert not non_public, f"README API identifiers not in __all__: {non_public}"
